@@ -5,7 +5,7 @@ import (
 )
 
 // Svg processor
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	_, err := compactor.ExecCommand(
 		"svgo",

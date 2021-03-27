@@ -7,7 +7,7 @@ import (
 )
 
 // Javascript processor
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	sourceOptions := strings.Join([]string{
 		"includeSources",

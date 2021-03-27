@@ -9,7 +9,18 @@ import (
 type Extension string
 
 // Options struct
-type Options map[string]string
+type Options struct {
+	Source      string
+	Destination string
+	Watch       bool
+	Minify      bool
+	SourceMap   bool
+	Compress    bool
+	Progressive bool
+	Include     []string
+	Exclude     []string
+	Maps        []string
+}
 
 // Context struct
 type Context struct {
@@ -18,13 +29,12 @@ type Context struct {
 	Path        string
 	Source      string
 	Destination string
-	Options     Options
 	Processed   bool
 	Skipped     bool
 }
 
 // Processor struct
-type Processor func(context *Context) error
+type Processor func(context *Context, options *Options) error
 
 // Processors struct
 type Processors []Processor
@@ -38,7 +48,7 @@ var _processors = Instance{}
 // Add processor to the instance
 func Add(extension Extension, processor Processor) {
 
-	if _, ok := _processors[extension]; ok == false {
+	if _, ok := _processors[extension]; !ok {
 		_processors[extension] = Processors{}
 	}
 
@@ -47,7 +57,7 @@ func Add(extension Extension, processor Processor) {
 }
 
 // Process file
-func Process(file, fromSource string, toDestination string, options Options) (*Context, error) {
+func Process(file string, options *Options) (*Context, error) {
 
 	var err error
 	var match bool
@@ -55,10 +65,9 @@ func Process(file, fromSource string, toDestination string, options Options) (*C
 	context := &Context{
 		File:        filepath.Base(file),
 		Extension:   strings.TrimLeft(filepath.Ext(file), "."),
-		Path:        strings.Replace(file, fromSource, "", 1),
+		Path:        strings.Replace(file, options.Source, "", 1),
 		Source:      file,
-		Destination: strings.Replace(file, fromSource, toDestination, 1),
-		Options:     options,
+		Destination: strings.Replace(file, options.Source, options.Destination, 1),
 	}
 
 	// Make sure folder exists to avoid issues
@@ -73,7 +82,7 @@ func Process(file, fromSource string, toDestination string, options Options) (*C
 		if context.Extension == string(extension) {
 
 			for _, processor := range extensionProcessors {
-				err = processor(context)
+				err = processor(context, options)
 				if err != nil {
 					return context, err
 				}
@@ -85,9 +94,9 @@ func Process(file, fromSource string, toDestination string, options Options) (*C
 	}
 
 	// Generic processors
-	if match != true {
+	if !match {
 		for _, processor := range _processors["*"] {
-			err = processor(context)
+			err = processor(context, options)
 			if err != nil {
 				return context, err
 			}

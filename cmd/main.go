@@ -49,9 +49,32 @@ func main() {
 
 	// Command line flags
 	version := flag.Bool("version", false, "Print program version")
+	source := flag.String("source", "src/", "Path of project source files")
+	destination := flag.String("destination", "dist/", "Path to the destination folder")
+
 	watch := flag.Bool("watch", false, "Enable live watch compilation")
-	_source := flag.String("source", "src/", "Path of project source files")
-	_destination := flag.String("destination", "dist/", "Path to the destination folder")
+	minify := flag.Bool("minify", true, "Minify code on compilation")
+	sourceMap := flag.Bool("source-map", true, "Include source map on compilation")
+	compress := flag.Bool("compress", true, "Compress images to reduce size")
+	progressive := flag.Bool("progressive", true, "Generate progressive new images formats")
+
+	var include []string
+	flag.Func("include", "Include matching files on the pattern", func(value string) error {
+		include = append(include, value)
+		return nil
+	})
+
+	var exclude []string
+	flag.Func("exclude", "Exclude matching files on glob pattern", func(value string) error {
+		exclude = append(exclude, value)
+		return nil
+	})
+
+	var maps []string
+	flag.Func("maps", "Maps matching files on glob pattern to destination", func(value string) error {
+		maps = append(maps, value)
+		return nil
+	})
 
 	// Parse values
 	flag.Parse()
@@ -80,31 +103,45 @@ func main() {
 	compactor.Add("webp", webp.Processor)
 
 	// Find real path
-	source, _ := filepath.Abs(*_source)
-	destination, _ := filepath.Abs(*_destination)
+	rootSource, _ := filepath.Abs(*source)
+	rootDestination, _ := filepath.Abs(*destination)
 
 	// Print information
 	print(Purple, ":::| COMPACTOR |:::\n")
-	print(Info, "[INFO] Files source folder is %s\n", source)
-	print(Info, "[INFO] Files destination folder is %s\n", destination)
+	print(Info, "[INFO] Files source folder is %s\n", rootSource)
+	print(Info, "[INFO] Files destination folder is %s\n", rootDestination)
 
-	if !compactor.ExistDirectory(source) {
+	if !compactor.ExistDirectory(rootSource) {
 		print(Fatal, "[ERROR] Files source folder does not exists\n")
 		return
 	}
 
-	if *watch {
+	// Options
+	options := compactor.Options{
+		Source:      rootSource,
+		Destination: rootDestination,
+		Watch:       *watch,
+		Minify:      *minify,
+		SourceMap:   *sourceMap,
+		Compress:    *compress,
+		Progressive: *progressive,
+		Include:     include,
+		Exclude:     exclude,
+		Maps:        maps,
+	}
+
+	if options.Watch {
 		print(Info, "[INFO] Running in watch mode!\n")
-		runWatcher(source, destination)
+		runWatcher(&options)
 	} else {
 		print(Info, "[INFO] Running in process and exit mode\n")
-		runDefault(source, destination)
+		runDefault(&options)
 		print(Success, "[SUCCESS] Done\n")
 	}
 
 }
 
-func runWatcher(rootSource string, rootDestination string) {
+func runWatcher(options *compactor.Options) {
 
 	w := watcher.New()
 	w.SetMaxEvents(1)
@@ -118,16 +155,16 @@ func runWatcher(rootSource string, rootDestination string) {
 
 				if !event.IsDir() {
 					if event.Op&watcher.Create == watcher.Create {
-						processFile(event.Path, rootSource, rootDestination)
+						processFile(event.Path, options)
 					} else if event.Op&watcher.Write == watcher.Write {
-						processFile(event.Path, rootSource, rootDestination)
+						processFile(event.Path, options)
 					} else if event.Op&watcher.Chmod == watcher.Chmod {
-						processFile(event.Path, rootSource, rootDestination)
+						processFile(event.Path, options)
 					} else if event.Op&watcher.Rename == watcher.Rename {
-						deleteFile(event.OldPath, rootSource, rootDestination)
-						processFile(event.Path, rootSource, rootDestination)
+						deleteFile(event.OldPath, options)
+						processFile(event.Path, options)
 					} else if event.Op&watcher.Remove == watcher.Remove {
-						deleteFile(event.Path, rootSource, rootDestination)
+						deleteFile(event.Path, options)
 					}
 				}
 
@@ -139,7 +176,7 @@ func runWatcher(rootSource string, rootDestination string) {
 		}
 	}()
 
-	err := w.AddRecursive(rootSource)
+	err := w.AddRecursive(options.Source)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -151,27 +188,25 @@ func runWatcher(rootSource string, rootDestination string) {
 
 }
 
-func runDefault(rootSource string, rootDestination string) {
+func runDefault(options *compactor.Options) {
 
-	files, err := compactor.ListFiles(rootSource)
+	files, err := compactor.ListFiles(options.Source)
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	for _, filename := range files {
-		processFile(filename, rootSource, rootDestination)
+		processFile(filename, options)
 	}
 
 }
 
-func processFile(filename string, source string, destination string) {
+func processFile(filename string, options *compactor.Options) {
 
 	context, err := compactor.Process(
 		filename,
-		source,
-		destination,
-		compactor.Options{},
+		options,
 	)
 
 	if err != nil {
@@ -183,10 +218,10 @@ func processFile(filename string, source string, destination string) {
 
 }
 
-func deleteFile(filename string, rootSource string, rootDestination string) {
+func deleteFile(filename string, options *compactor.Options) {
 
-	clean := strings.Replace(filename, rootSource, "", 1)
-	destination := strings.Replace(filename, rootSource, rootDestination, 1)
+	clean := strings.Replace(filename, options.Source, "", 1)
+	destination := strings.Replace(filename, options.Source, options.Destination, 1)
 
 	err := compactor.DeleteFile(destination)
 

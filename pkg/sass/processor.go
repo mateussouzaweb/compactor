@@ -8,7 +8,7 @@ import (
 
 // Sass processor.
 // Will also compress CSS, so no need to minify
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	context.Destination = strings.Replace(
 		context.Destination, ".scss", ".css", 1,

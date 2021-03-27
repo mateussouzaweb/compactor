@@ -7,7 +7,7 @@ import (
 )
 
 // Typescript processor
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	context.Destination = strings.Replace(
 		context.Destination, ".tsx", ".js", 1,

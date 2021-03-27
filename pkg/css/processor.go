@@ -6,6 +6,6 @@ import (
 )
 
 // CSS processor. Same as SASS
-func Processor(context *compactor.Context) error {
-	return sass.Processor(context)
+func Processor(context *compactor.Context, options *compactor.Options) error {
+	return sass.Processor(context, options)
 }

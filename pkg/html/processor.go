@@ -7,7 +7,7 @@ import (
 )
 
 // HTML processor
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	content, perm, err := compactor.ReadFileAndPermission(context.Source)
 

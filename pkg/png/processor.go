@@ -6,7 +6,7 @@ import (
 )
 
 // PNG processor
-func Processor(context *compactor.Context) error {
+func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	err := compactor.CopyFile(context.Source, context.Destination)
 
