@@ -84,17 +84,17 @@ func main() {
 	destination, _ := filepath.Abs(*_destination)
 
 	// Print information
-	print(Purple, "### COMPACTOR ###\n")
-	print(Info, "=> Files source folder is %s\n", source)
-	print(Info, "=> Files destination folder is %s\n", destination)
+	print(Purple, ":::| COMPACTOR |:::\n")
+	print(Info, "[INFO] Files source folder is %s\n", source)
+	print(Info, "[INFO] Files destination folder is %s\n", destination)
 
 	if *watch {
-		print(Info, "=> Running in watch mode!\n")
+		print(Info, "[INFO] Running in watch mode!\n")
 		runWatcher(source, destination)
 	} else {
-		print(Info, "=> Running in process and exit mode\n")
+		print(Info, "[INFO] Running in process and exit mode\n")
 		runDefault(source, destination)
-		print(Success, "=> Done\n")
+		print(Success, "[SUCCESS] Done\n")
 	}
 
 }
@@ -109,7 +109,7 @@ func runWatcher(rootSource string, rootDestination string) {
 			select {
 			case event := <-w.Event:
 
-				// print(Warn, "EVENT: %v\n", event)
+				// print(Warn, "[EVENT] %v\n", event)
 
 				if !event.IsDir() {
 					if event.Op&watcher.Create == watcher.Create {
@@ -170,10 +170,10 @@ func processFile(filename string, source string, destination string) {
 	)
 
 	if err != nil {
-		print(Fatal, "ERROR: %s\n", context.Path)
-		print(Warn, "%v\n\n", err)
+		print(Fatal, "[ERROR] %s\n", context.Path)
+		print(Warn, "%v\n", err)
 	} else {
-		print(Success, "Processed: %s\n", context.Path)
+		print(Success, "[PROCESSED] %s\n", context.Path)
 	}
 
 }
@@ -186,10 +186,10 @@ func deleteFile(filename string, rootSource string, rootDestination string) {
 	err := compactor.DeleteFile(destination)
 
 	if err != nil {
-		print(Fatal, "ERROR: %s\n", clean)
-		print(Warn, "%v\n\n", err)
+		print(Fatal, "[ERROR] %s\n", clean)
+		print(Warn, "%v\n", err)
 	} else {
-		print("Deleted: %s\n", clean)
+		print(Warn, "[DELETED] %s\n", clean)
 	}
 
 }
