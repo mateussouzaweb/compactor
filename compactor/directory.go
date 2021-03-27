@@ -56,14 +56,24 @@ func FindFiles(root string, names []string) ([]string, error) {
 	return files, err
 }
 
+// ExistDirectory check if directory exists
+func ExistDirectory(path string) bool {
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
 // EnsureDirectory makes sure directory exists from file path
 func EnsureDirectory(filename string) error {
 
 	path := filepath.Dir(filename)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if !ExistDirectory(path) {
 
-		err = os.MkdirAll(path, 0775)
+		err := os.MkdirAll(path, 0775)
 
 		if err != nil {
 			return err

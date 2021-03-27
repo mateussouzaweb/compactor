@@ -88,6 +88,11 @@ func main() {
 	print(Info, "[INFO] Files source folder is %s\n", source)
 	print(Info, "[INFO] Files destination folder is %s\n", destination)
 
+	if !compactor.ExistDirectory(source) {
+		print(Fatal, "[ERROR] Files source folder does not exists\n")
+		return
+	}
+
 	if *watch {
 		print(Info, "[INFO] Running in watch mode!\n")
 		runWatcher(source, destination)
