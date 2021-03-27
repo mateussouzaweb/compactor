@@ -1,11 +1,19 @@
 package javascript
 
 import (
+	"strings"
+
 	"github.com/mateussouzaweb/compactor/compactor"
 )
 
 // Javascript processor
 func Processor(context *compactor.Context) error {
+
+	sourceOptions := strings.Join([]string{
+		"includeSources",
+		"filename='" + context.File + ".map'",
+		"url='" + context.File + ".map'",
+	}, ",")
 
 	_, err := compactor.ExecCommand(
 		"uglifyjs",
@@ -13,7 +21,7 @@ func Processor(context *compactor.Context) error {
 		"--output", context.Destination,
 		"--compress",
 		"--comments",
-		"--source-map", "url="+context.File+".map,includeSources",
+		"--source-map", sourceOptions,
 	)
 
 	if err == nil {

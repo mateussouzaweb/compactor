@@ -24,6 +24,7 @@ func Processor(context *compactor.Context) error {
 		"--target", "ES6",
 		"--removeComments",
 		"--sourceMap",
+		"--inlineSources",
 	)
 
 	if err != nil {
@@ -31,13 +32,23 @@ func Processor(context *compactor.Context) error {
 	}
 
 	// Minify
+	file := strings.Replace(
+		context.File, ".ts", ".js", 1,
+	)
+	sourceOptions := strings.Join([]string{
+		"includeSources",
+		"filename='" + file + ".map'",
+		"url='" + file + ".map'",
+		"content='" + context.Destination + ".map'",
+	}, ",")
+
 	_, err = compactor.ExecCommand(
 		"uglifyjs",
 		context.Destination,
 		"--output", context.Destination,
 		"--compress",
 		"--comments",
-		"--source-map", "content='"+context.Destination+".map'",
+		"--source-map", sourceOptions,
 	)
 
 	if err == nil {
