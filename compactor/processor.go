@@ -56,6 +56,13 @@ func Add(extension Extension, processor Processor) {
 
 }
 
+// Remove processor from the instance
+func Remove(extension Extension) {
+	if _, ok := _processors[extension]; ok {
+		_processors[extension] = Processors{}
+	}
+}
+
 // Process file
 func Process(file string, options *Options) (*Context, error) {
 
@@ -91,7 +98,7 @@ func Process(file string, options *Options) (*Context, error) {
 
 	// Extension processors
 	for extension, extensionProcessors := range _processors {
-		if context.Extension == string(extension) {
+		if context.Extension == string(extension) && len(extensionProcessors) > 0 {
 
 			for _, processor := range extensionProcessors {
 				err = processor(context, options)
