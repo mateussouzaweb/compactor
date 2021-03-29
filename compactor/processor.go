@@ -70,6 +70,18 @@ func Process(file string, options *Options) (*Context, error) {
 		Destination: strings.Replace(file, options.Source, options.Destination, 1),
 	}
 
+	// Check include mode
+	if !MatchList(context.Path, options.Include, true) {
+		context.Skipped = true
+		return context, err
+	}
+
+	// Check exclude mode
+	if MatchList(context.Path, options.Exclude, false) {
+		context.Skipped = true
+		return context, err
+	}
+
 	// Make sure folder exists to avoid issues
 	err = EnsureDirectory(context.Destination)
 
@@ -104,4 +116,27 @@ func Process(file string, options *Options) (*Context, error) {
 	}
 
 	return context, err
+}
+
+// Check if filename match glob list pattern
+func MatchList(filename string, list []string, defaultValue bool) bool {
+
+	match := defaultValue
+
+	for _, pattern := range list {
+
+		result, err := filepath.Match(pattern, filename)
+
+		if err != nil {
+			continue
+		}
+
+		if result {
+			match = true
+			break
+		}
+
+	}
+
+	return match
 }
