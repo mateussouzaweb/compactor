@@ -52,26 +52,26 @@ func main() {
 	source := flag.String("source", "src/", "Path of project source files")
 	destination := flag.String("destination", "dist/", "Path to the destination folder")
 
-	watch := flag.Bool("watch", false, "Enable live watch compilation")
+	watch := flag.Bool("watch", false, "Enable watcher for live compilation")
 	minify := flag.Bool("minify", true, "Minify code on compilation")
 	sourceMap := flag.Bool("source-map", true, "Include source map on compilation")
 	compress := flag.Bool("compress", true, "Compress images to reduce size")
-	progressive := flag.Bool("progressive", true, "Generate progressive new images formats")
+	progressive := flag.Bool("progressive", true, "Generate new images formats from origin")
 
 	var include []string
-	flag.Func("include", "Include matching files on the pattern", func(value string) error {
+	flag.Func("include", "Only include matching files from the given pattern", func(value string) error {
 		include = append(include, value)
 		return nil
 	})
 
 	var exclude []string
-	flag.Func("exclude", "Exclude matching files on glob pattern", func(value string) error {
+	flag.Func("exclude", "Exclude matching files from the given pattern", func(value string) error {
 		exclude = append(exclude, value)
 		return nil
 	})
 
 	var maps []string
-	flag.Func("maps", "Maps matching files on glob pattern to destination", func(value string) error {
+	flag.Func("maps", "Map matching files from the given pattern to destination", func(value string) error {
 		maps = append(maps, value)
 		return nil
 	})
@@ -79,8 +79,10 @@ func main() {
 	// Parse values
 	flag.Parse()
 
+	print(Purple, ":::| COMPACTOR |:::\n")
+
 	if *version {
-		print("", "Compactor version 0.0.1\n")
+		print(Purple, "Version 0.0.1\n")
 		return
 	}
 
@@ -107,7 +109,6 @@ func main() {
 	rootDestination, _ := filepath.Abs(*destination)
 
 	// Print information
-	print(Purple, ":::| COMPACTOR |:::\n")
 	print(Info, "[INFO] Files source folder is %s\n", rootSource)
 	print(Info, "[INFO] Files destination folder is %s\n", rootDestination)
 
@@ -212,7 +213,9 @@ func processFile(filename string, options *compactor.Options) {
 	if err != nil {
 		print(Fatal, "[ERROR] %s\n", context.Path)
 		print(Warn, "%v\n", err)
-	} else {
+	} else if context.Skipped {
+		print(Warn, "[SKIPPED] %s\n", context.Path)
+	} else if context.Processed {
 		print(Success, "[PROCESSED] %s\n", context.Path)
 	}
 
