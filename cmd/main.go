@@ -49,6 +49,8 @@ func main() {
 
 	// Command line flags
 	version := flag.Bool("version", false, "Print program version")
+	disable := flag.String("disable", "", "Comma separated. Defines which processors should be disabled. When a processor is disabled, it uses the generic copy processor")
+
 	source := flag.String("source", "src/", "Path of project source files")
 	destination := flag.String("destination", "dist/", "Path to the destination folder")
 
@@ -103,6 +105,14 @@ func main() {
 	compactor.Add("jpg", jpeg.Processor)
 	compactor.Add("png", png.Processor)
 	compactor.Add("webp", webp.Processor)
+
+	if *disable != "" {
+		list := strings.Split(*disable, ",")
+		for _, item := range list {
+			print(Info, "[INFO] Disabled processor: %s\n", item)
+			compactor.Remove(compactor.Extension(item))
+		}
+	}
 
 	// Find real path
 	rootSource, _ := filepath.Abs(*source)
