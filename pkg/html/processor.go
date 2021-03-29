@@ -26,22 +26,24 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	_, err = compactor.ExecCommand(
-		"html-minifier",
-		"--output", context.Destination,
-		"--collapse-whitespace",
-		"--remove-comments",
-		"--remove-optional-tags",
-		"--remove-redundant-attributes",
-		"--remove-script-type-attributes",
-		"--remove-style-link-type-attributes",
-		"--use-short-doctype",
-		"--minify-urls", "true",
-		"--minify-css", "true",
-		"--minify-js", "true",
-		"--ignore-custom-fragments", "/{{[{]?(.*?)[}]?}}/",
-		context.Destination,
-	)
+	if options.Minify {
+		_, err = compactor.ExecCommand(
+			"html-minifier",
+			"--output", context.Destination,
+			"--collapse-whitespace",
+			"--remove-comments",
+			"--remove-optional-tags",
+			"--remove-redundant-attributes",
+			"--remove-script-type-attributes",
+			"--remove-style-link-type-attributes",
+			"--use-short-doctype",
+			"--minify-urls", "true",
+			"--minify-css", "true",
+			"--minify-js", "true",
+			"--ignore-custom-fragments", "/{{[{]?(.*?)[}]?}}/",
+			context.Destination,
+		)
+	}
 
 	if err == nil {
 		context.Processed = true

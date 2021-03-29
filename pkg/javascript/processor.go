@@ -9,19 +9,26 @@ import (
 // Javascript processor
 func Processor(context *compactor.Context, options *compactor.Options) error {
 
-	sourceOptions := strings.Join([]string{
-		"includeSources",
-		"filename='" + context.File + ".map'",
-		"url='" + context.File + ".map'",
-	}, ",")
+	args := []string{
+		context.Source,
+		"--output", context.Destination,
+	}
+
+	if options.Minify {
+		args = append(args, "--compress", "--comments")
+	}
+
+	if options.SourceMap {
+		args = append(args, "--source-map", strings.Join([]string{
+			"includeSources",
+			"filename='" + context.File + ".map'",
+			"url='" + context.File + ".map'",
+		}, ","))
+	}
 
 	_, err := compactor.ExecCommand(
 		"uglifyjs",
-		context.Source,
-		"--output", context.Destination,
-		"--compress",
-		"--comments",
-		"--source-map", sourceOptions,
+		args...,
 	)
 
 	if err == nil {

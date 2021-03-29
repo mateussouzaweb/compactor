@@ -26,10 +26,12 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	content, err = Minify(content)
+	if options.Minify {
+		content, err = Minify(content)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	err = compactor.WriteFile(context.Destination, content, perm)

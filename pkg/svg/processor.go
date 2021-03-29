@@ -7,12 +7,18 @@ import (
 // Svg processor
 func Processor(context *compactor.Context, options *compactor.Options) error {
 
-	_, err := compactor.ExecCommand(
-		"svgo",
-		"--quiet",
-		"--input", context.Source,
-		"--output", context.Destination,
-	)
+	var err error
+
+	if options.Compress {
+		_, err = compactor.ExecCommand(
+			"svgo",
+			"--quiet",
+			"--input", context.Source,
+			"--output", context.Destination,
+		)
+	} else {
+		err = compactor.CopyFile(context.Source, context.Destination)
+	}
 
 	if err == nil {
 		context.Processed = true

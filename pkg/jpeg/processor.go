@@ -14,20 +14,24 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	_, err = compactor.ExecCommand(
-		"jpegoptim",
-		"--quiet",
-		"--strip-all",
-		"--all-progressive",
-		"--overwrite",
-		context.Destination,
-	)
+	if options.Compress {
+		_, err = compactor.ExecCommand(
+			"jpegoptim",
+			"--quiet",
+			"--strip-all",
+			"--all-progressive",
+			"--overwrite",
+			context.Destination,
+		)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	err = webp.CreateCopy(context.Source, context.Destination, 75)
+	if options.Progressive {
+		err = webp.CreateCopy(context.Source, context.Destination, 75)
+	}
 
 	if err == nil {
 		context.Processed = true

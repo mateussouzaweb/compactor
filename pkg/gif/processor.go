@@ -13,12 +13,14 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	_, err = compactor.ExecCommand(
-		"gifsicle",
-		"-03",
-		context.Destination,
-		"-o", context.Destination,
-	)
+	if options.Compress {
+		_, err = compactor.ExecCommand(
+			"gifsicle",
+			"-03",
+			context.Destination,
+			"-o", context.Destination,
+		)
+	}
 
 	if err == nil {
 		context.Processed = true

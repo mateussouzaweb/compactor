@@ -17,11 +17,21 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		context.Destination, ".sass", ".css", 1,
 	)
 
+	args := []string{
+		context.Source + ":" + context.Destination,
+	}
+
+	if options.Minify {
+		args = append(args, "--style", "compressed")
+	}
+
+	if options.SourceMap {
+		args = append(args, "--source-map", "--embed-sources")
+	}
+
 	_, err := compactor.ExecCommand(
 		"sass",
-		context.Source+":"+context.Destination,
-		"--style", "compressed",
-		"--source-map", "--embed-sources",
+		args...,
 	)
 
 	if err == nil {

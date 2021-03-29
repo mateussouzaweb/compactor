@@ -16,15 +16,21 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		context.Destination, ".ts", ".js", 1,
 	)
 
-	// Compile
-	_, err := compactor.ExecCommand(
-		"tsc",
+	args := []string{
 		context.Source,
 		"--outFile", context.Destination,
 		"--target", "ES6",
 		"--removeComments",
-		"--sourceMap",
-		"--inlineSources",
+	}
+
+	if options.SourceMap {
+		args = append(args, "--sourceMap", "--inlineSources")
+	}
+
+	// Compile
+	_, err := compactor.ExecCommand(
+		"tsc",
+		args...,
 	)
 
 	if err != nil {
@@ -32,24 +38,38 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 	}
 
 	// Minify
-	file := strings.Replace(
-		context.File, ".ts", ".js", 1,
-	)
-	sourceOptions := strings.Join([]string{
-		"includeSources",
-		"filename='" + file + ".map'",
-		"url='" + file + ".map'",
-		"content='" + context.Destination + ".map'",
-	}, ",")
+	if options.Minify {
 
-	_, err = compactor.ExecCommand(
-		"uglifyjs",
-		context.Destination,
-		"--output", context.Destination,
-		"--compress",
-		"--comments",
-		"--source-map", sourceOptions,
-	)
+		args = []string{
+			context.Destination,
+			"--output", context.Destination,
+			"--compress",
+			"--comments",
+		}
+
+		if options.SourceMap {
+
+			file := strings.Replace(
+				context.File, ".ts", ".js", 1,
+			)
+
+			sourceOptions := strings.Join([]string{
+				"includeSources",
+				"filename='" + file + ".map'",
+				"url='" + file + ".map'",
+				"content='" + context.Destination + ".map'",
+			}, ",")
+
+			args = append(args, "--source-map", sourceOptions)
+
+		}
+
+		_, err = compactor.ExecCommand(
+			"uglifyjs",
+			args...,
+		)
+
+	}
 
 	if err == nil {
 		context.Processed = true
