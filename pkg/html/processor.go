@@ -26,7 +26,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	if options.Minify {
+	if options.ShouldCompress(context) {
 		_, err = compactor.ExecCommand(
 			"html-minifier",
 			"--output", context.Destination,

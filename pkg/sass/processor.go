@@ -6,8 +6,7 @@ import (
 	"github.com/mateussouzaweb/compactor/compactor"
 )
 
-// Sass processor.
-// Will also compress CSS, so no need to minify
+// Sass processor
 func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	context.Destination = strings.Replace(
@@ -21,11 +20,11 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		context.Source + ":" + context.Destination,
 	}
 
-	if options.Minify {
+	if options.ShouldCompress(context) {
 		args = append(args, "--style", "compressed")
 	}
 
-	if options.SourceMap {
+	if options.GenerateSourceMap(context) {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 

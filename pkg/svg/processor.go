@@ -9,7 +9,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 
 	var err error
 
-	if options.Compress {
+	if options.ShouldCompress(context) {
 		_, err = compactor.ExecCommand(
 			"svgo",
 			"--quiet",

@@ -14,11 +14,11 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		"--output", context.Destination,
 	}
 
-	if options.Minify {
+	if options.ShouldCompress(context) {
 		args = append(args, "--compress", "--comments")
 	}
 
-	if options.SourceMap {
+	if options.GenerateSourceMap(context) {
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
 			"filename='" + context.File + ".map'",

@@ -13,7 +13,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		return err
 	}
 
-	if options.Compress {
+	if options.ShouldCompress(context) {
 		_, err = compactor.ExecCommand(
 			"gifsicle",
 			"-03",

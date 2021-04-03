@@ -8,21 +8,6 @@ import (
 // Extension struct
 type Extension string
 
-// Options struct
-type Options struct {
-	Source      string
-	Destination string
-	Watch       bool
-	Minify      bool
-	SourceMap   bool
-	Compress    bool
-	Progressive bool
-	Include     []string
-	Exclude     []string
-	Ignore      []string
-	Maps        []string
-}
-
 // Context struct
 type Context struct {
 	File        string
@@ -79,20 +64,12 @@ func Process(file string, options *Options) (*Context, error) {
 		Destination: strings.Replace(file, options.Source, options.Destination, 1),
 	}
 
-	// Check ignore
-	if MatchList(context.Path, options.Ignore, false) {
+	if options.ShouldIgnore(context) {
 		context.Ignored = true
 		return context, err
 	}
 
-	// Check include mode
-	if !MatchList(context.Path, options.Include, true) {
-		context.Skipped = true
-		return context, err
-	}
-
-	// Check exclude mode
-	if MatchList(context.Path, options.Exclude, false) {
+	if options.ShouldSkip(context) {
 		context.Skipped = true
 		return context, err
 	}
@@ -131,27 +108,4 @@ func Process(file string, options *Options) (*Context, error) {
 	}
 
 	return context, err
-}
-
-// Check if filename match glob list pattern
-func MatchList(filename string, list []string, defaultValue bool) bool {
-
-	match := defaultValue
-
-	for _, pattern := range list {
-
-		result, err := filepath.Match(pattern, filename)
-
-		if err != nil {
-			continue
-		}
-
-		if result {
-			match = true
-			break
-		}
-
-	}
-
-	return match
 }
