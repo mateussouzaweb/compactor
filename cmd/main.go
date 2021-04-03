@@ -97,7 +97,7 @@ func main() {
 	// Command line flags
 	flag.Func(
 		"source",
-		"Path of project source files",
+		"Path of project source files [DEFAULT: /src]",
 		func(path string) error {
 			options.Source, _ = filepath.Abs(path)
 			return nil
@@ -105,7 +105,7 @@ func main() {
 
 	flag.Func(
 		"destination",
-		"Path to the destination folder",
+		"Path to the destination folder [DEFAULT: /dist]",
 		func(path string) error {
 			options.Destination, _ = filepath.Abs(path)
 			return nil
@@ -115,20 +115,19 @@ func main() {
 		&options.Development,
 		"development",
 		options.Development,
-		"Run on development mode (no compression)")
+		"Run on development mode (no compression) [DEFAULT: false]")
 
 	flag.BoolVar(
 		&options.Watch,
 		"watch",
 		options.Watch,
-		"Enable watcher for live compilation")
+		"Enable watcher for live compilation [DEFAULT: false]")
 
 	flag.Func(
 		"compress",
-		"Compress or minify code/images to reduce size",
+		"Compress or minify code/images to reduce size [DEFAULT: true]",
 		func(value string) error {
 
-			fmt.Println(value)
 			split := strings.Split(value, ":")
 			enabled := trueOrFalse(split[0])
 
@@ -148,7 +147,7 @@ func main() {
 
 	flag.Func(
 		"source-map",
-		"Include source map on compilation",
+		"Include source map on compilation [DEFAULT: true]",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -170,7 +169,7 @@ func main() {
 
 	flag.Func(
 		"progressive",
-		"Generate new images formats from origin as progressive enhancement",
+		"Generate new images formats from origin as progressive enhancement [DEFAULT: true]",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -256,8 +255,6 @@ func main() {
 		print("", "Compactor version 0.0.1\n")
 		return
 	}
-
-	fmt.Println(options)
 
 	print(Purple, ":::| COMPACTOR |:::\n")
 	print(Info, "[INFO] Files source folder is %s\n", options.Source)
