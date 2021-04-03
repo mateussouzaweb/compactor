@@ -279,7 +279,6 @@ func main() {
 func runWatcher(options *compactor.Options) {
 
 	w := watcher.New()
-	w.SetMaxEvents(1)
 
 	go func() {
 		for {
@@ -296,6 +295,9 @@ func runWatcher(options *compactor.Options) {
 					} else if event.Op&watcher.Chmod == watcher.Chmod {
 						processFile(event.Path, options)
 					} else if event.Op&watcher.Rename == watcher.Rename {
+						deleteFile(event.OldPath, options)
+						processFile(event.Path, options)
+					} else if event.Op&watcher.Move == watcher.Move {
 						deleteFile(event.OldPath, options)
 						processFile(event.Path, options)
 					} else if event.Op&watcher.Remove == watcher.Remove {
