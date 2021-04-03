@@ -52,7 +52,7 @@ npm install -g svgo
 Then download the most recent binary file and make it executable:
 
 ```bash
-GIT_URL=https://raw.githubusercontent.com/mateussouzaweb/compactor/master/bin
+GIT_URL=https://raw.githubusercontent.com/mateussouzaweb/compactor
 sudo wget $GIT_URL/master/bin/compactor -O /usr/local/bin/compactor
 sudo chmod +x /usr/local/bin/compactor
 ```
