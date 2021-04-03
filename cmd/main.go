@@ -45,50 +45,37 @@ func print(color string, format string, args ...interface{}) {
 	fmt.Printf(color+format+Reset, args...)
 }
 
+func trueOrFalse(value string) bool {
+	value = strings.ToLower(value)
+	if value == "true" || value == "t" || value == "1" {
+		return true
+	}
+	return false
+}
+
 func main() {
 
-	// Command line flags
-	version := flag.Bool("version", false, "Print program version")
-	disable := flag.String("disable", "", "Comma separated. Defines which processors should be disabled. When a processor is disabled, it uses the generic copy processor")
+	// Options
+	source, _ := filepath.Abs("src/")
+	destination, _ := filepath.Abs("dist/")
 
-	source := flag.String("source", "src/", "Path of project source files")
-	destination := flag.String("destination", "dist/", "Path to the destination folder")
-
-	watch := flag.Bool("watch", false, "Enable watcher for live compilation")
-	minify := flag.Bool("minify", true, "Minify code on compilation")
-	sourceMap := flag.Bool("source-map", true, "Include source map on compilation")
-	compress := flag.Bool("compress", true, "Compress images to reduce size")
-	progressive := flag.Bool("progressive", true, "Generate new images formats from origin")
-
-	var include []string
-	flag.Func("include", "Only include matching files from the given pattern", func(value string) error {
-		include = append(include, value)
-		return nil
-	})
-
-	var exclude []string
-	flag.Func("exclude", "Exclude matching files from the given pattern", func(value string) error {
-		exclude = append(exclude, value)
-		return nil
-	})
-
-	var maps []string
-	flag.Func("maps", "Map matching files from the given pattern to destination", func(value string) error {
-		maps = append(maps, value)
-		return nil
-	})
-
-	// Parse values
-	flag.Parse()
-
-	print(Purple, ":::| COMPACTOR |:::\n")
-
-	if *version {
-		print(Purple, "Version 0.0.1\n")
-		return
+	options := compactor.Options{
+		Source:      source,
+		Destination: destination,
+		Development: false,
+		Watch:       false,
+		Compress: compactor.Compress{
+			Enabled: true,
+		},
+		SourceMap: compactor.SourceMap{
+			Enabled: true,
+		},
+		Progressive: compactor.Progressive{
+			Enabled: true,
+		},
 	}
 
-	// Add parsers
+	// Parsers
 	compactor.Add("*", generic.Processor)
 	compactor.Add("sass", sass.Processor)
 	compactor.Add("scss", sass.Processor)
@@ -106,48 +93,187 @@ func main() {
 	compactor.Add("png", png.Processor)
 	compactor.Add("webp", webp.Processor)
 
-	if *disable != "" {
-		list := strings.Split(*disable, ",")
-		for _, item := range list {
-			print(Info, "[INFO] Disabled processor: %s\n", item)
-			compactor.Remove(compactor.Extension(item))
-		}
-	}
+	// Command line flags
+	flag.Func(
+		"source",
+		"Path of project source files",
+		func(path string) error {
+			options.Source, _ = filepath.Abs(path)
+			return nil
+		})
 
-	// Find real path
-	rootSource, _ := filepath.Abs(*source)
-	rootDestination, _ := filepath.Abs(*destination)
+	flag.Func(
+		"destination",
+		"Path to the destination folder",
+		func(path string) error {
+			options.Destination, _ = filepath.Abs(path)
+			return nil
+		})
+
+	flag.BoolVar(
+		&options.Development,
+		"development",
+		options.Development,
+		"Run on development mode (no compression)")
+
+	flag.BoolVar(
+		&options.Watch,
+		"watch",
+		options.Watch,
+		"Enable watcher for live compilation")
+
+	flag.Func(
+		"compress",
+		"Compress or minify code/images to reduce size",
+		func(value string) error {
+
+			fmt.Println(value)
+			split := strings.Split(value, ":")
+			enabled := trueOrFalse(split[0])
+
+			if len(split) > 1 {
+				extensions := strings.Split(split[1], ",")
+				if enabled {
+					options.Compress.Include = append(options.Compress.Include, extensions...)
+				} else {
+					options.Compress.Exclude = append(options.Compress.Exclude, extensions...)
+				}
+			} else {
+				options.Compress.Enabled = enabled
+			}
+
+			return nil
+		})
+
+	flag.Func(
+		"source-map",
+		"Include source map on compilation",
+		func(value string) error {
+
+			split := strings.Split(value, ":")
+			enabled := trueOrFalse(split[0])
+
+			if len(split) > 1 {
+				extensions := strings.Split(split[1], ",")
+				if enabled {
+					options.SourceMap.Include = append(options.SourceMap.Include, extensions...)
+				} else {
+					options.SourceMap.Exclude = append(options.SourceMap.Exclude, extensions...)
+				}
+			} else {
+				options.SourceMap.Enabled = enabled
+			}
+
+			return nil
+		})
+
+	flag.Func(
+		"progressive",
+		"Generate new images formats from origin as progressive enhancement",
+		func(value string) error {
+
+			split := strings.Split(value, ":")
+			enabled := trueOrFalse(split[0])
+
+			if len(split) > 1 {
+				extensions := strings.Split(split[1], ",")
+				if enabled {
+					options.Progressive.Include = append(options.Progressive.Include, extensions...)
+				} else {
+					options.Progressive.Exclude = append(options.Progressive.Exclude, extensions...)
+				}
+			} else {
+				options.Progressive.Enabled = enabled
+			}
+
+			return nil
+		})
+
+	flag.Func(
+		"bundle",
+		"Create bundled final version from multiple files. Map matching files from the given pattern to destination",
+		func(value string) error {
+
+			split := strings.Split(value, ":")
+			destination := split[0]
+			files := strings.Split(split[1], ",")
+
+			options.Bundles = append(options.Bundles, compactor.Bundle{
+				Destination: destination,
+				Files:       files,
+			})
+
+			return nil
+		})
+
+	flag.Func(
+		"include",
+		"Only include matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Include = append(options.Include, patterns...)
+			return nil
+		})
+
+	flag.Func(
+		"exclude",
+		"Exclude matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Exclude = append(options.Exclude, patterns...)
+			return nil
+		})
+
+	flag.Func(
+		"ignore",
+		"Ignore matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Ignore = append(options.Ignore, patterns...)
+			return nil
+		})
+
+	flag.Func(
+		"disable",
+		"Comma separated. Defines which processors should be disabled. When a processor is disabled, it uses the generic copy processor",
+		func(value string) error {
+
+			list := strings.Split(value, ",")
+			for _, item := range list {
+				compactor.Remove(compactor.Extension(item))
+			}
+
+			return nil
+		})
+
+	// Parse values
+	version := flag.Bool("version", false, "Print program version")
+	flag.Parse()
 
 	// Print information
-	print(Info, "[INFO] Files source folder is %s\n", rootSource)
-	print(Info, "[INFO] Files destination folder is %s\n", rootDestination)
+	if *version {
+		print("", "Compactor version 0.0.1\n")
+		return
+	}
 
-	if !compactor.ExistDirectory(rootSource) {
+	fmt.Println(options)
+
+	print(Purple, ":::| COMPACTOR |:::\n")
+	print(Info, "[INFO] Files source folder is %s\n", options.Source)
+	print(Info, "[INFO] Files destination folder is %s\n", options.Destination)
+
+	if !compactor.ExistDirectory(options.Source) {
 		print(Fatal, "[ERROR] Files source folder does not exists\n")
 		return
 	}
 
-	// Options
-	options := compactor.Options{
-		Source:      rootSource,
-		Destination: rootDestination,
-		Watch:       *watch,
-		Minify:      *minify,
-		SourceMap:   *sourceMap,
-		Compress:    *compress,
-		Progressive: *progressive,
-		Include:     include,
-		Exclude:     exclude,
-		Maps:        maps,
-	}
-
 	if options.Watch {
 		print(Info, "[INFO] Running in watch mode!\n")
+		runDefault(&options)
 		runWatcher(&options)
 	} else {
 		print(Info, "[INFO] Running in process and exit mode\n")
 		runDefault(&options)
-		print(Success, "[SUCCESS] Done\n")
 	}
 
 }
