@@ -252,11 +252,11 @@ func main() {
 
 	// Print information
 	if *version {
-		print("", "Compactor version 0.0.1\n")
+		print("", "Compactor version 0.0.2\n")
 		return
 	}
 
-	print(Purple, ":::| COMPACTOR |:::\n")
+	print(Purple, ":::| COMPACTOR - 0.0.2 |:::\n")
 	print(Info, "[INFO] Files source folder is %s\n", options.Source)
 	print(Info, "[INFO] Files destination folder is %s\n", options.Destination)
 
