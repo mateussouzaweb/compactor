@@ -86,6 +86,7 @@ func main() {
 	compactor.Add("json", json.Processor)
 	compactor.Add("xml", xml.Processor)
 	compactor.Add("html", html.Processor)
+	compactor.Add("htm", html.Processor)
 	compactor.Add("svg", svg.Processor)
 	compactor.Add("gif", gif.Processor)
 	compactor.Add("jpeg", jpeg.Processor)
