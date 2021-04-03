@@ -19,6 +19,7 @@ type Options struct {
 	Progressive bool
 	Include     []string
 	Exclude     []string
+	Ignore      []string
 	Maps        []string
 }
 
@@ -31,6 +32,7 @@ type Context struct {
 	Destination string
 	Processed   bool
 	Skipped     bool
+	Ignored     bool
 }
 
 // Processor struct
@@ -75,6 +77,12 @@ func Process(file string, options *Options) (*Context, error) {
 		Path:        strings.Replace(file, options.Source, "", 1),
 		Source:      file,
 		Destination: strings.Replace(file, options.Source, options.Destination, 1),
+	}
+
+	// Check ignore
+	if MatchList(context.Path, options.Ignore, false) {
+		context.Ignored = true
+		return context, err
 	}
 
 	// Check include mode
