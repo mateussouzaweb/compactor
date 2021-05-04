@@ -64,6 +64,9 @@ func main() {
 		Destination: destination,
 		Development: false,
 		Watch:       false,
+		Include:     []string{},
+		Exclude:     []string{},
+		Ignore:      []string{},
 		Compress: compactor.Compress{
 			Enabled: true,
 		},
@@ -73,6 +76,7 @@ func main() {
 		Progressive: compactor.Progressive{
 			Enabled: true,
 		},
+		Bundles: []compactor.Bundle{},
 	}
 
 	// Parsers
@@ -122,6 +126,33 @@ func main() {
 		"watch",
 		options.Watch,
 		"Enable watcher for live compilation [DEFAULT: false]")
+
+	flag.Func(
+		"include",
+		"Only include matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Include = append(options.Include, patterns...)
+			return nil
+		})
+
+	flag.Func(
+		"exclude",
+		"Exclude matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Exclude = append(options.Exclude, patterns...)
+			return nil
+		})
+
+	flag.Func(
+		"ignore",
+		"Ignore matching files from the given pattern",
+		func(value string) error {
+			patterns := strings.Split(value, ",")
+			options.Ignore = append(options.Ignore, patterns...)
+			return nil
+		})
 
 	flag.Func(
 		"compress",
@@ -203,33 +234,6 @@ func main() {
 				Files:       files,
 			})
 
-			return nil
-		})
-
-	flag.Func(
-		"include",
-		"Only include matching files from the given pattern",
-		func(value string) error {
-			patterns := strings.Split(value, ",")
-			options.Include = append(options.Include, patterns...)
-			return nil
-		})
-
-	flag.Func(
-		"exclude",
-		"Exclude matching files from the given pattern",
-		func(value string) error {
-			patterns := strings.Split(value, ",")
-			options.Exclude = append(options.Exclude, patterns...)
-			return nil
-		})
-
-	flag.Func(
-		"ignore",
-		"Ignore matching files from the given pattern",
-		func(value string) error {
-			patterns := strings.Split(value, ",")
-			options.Ignore = append(options.Ignore, patterns...)
 			return nil
 		})
 

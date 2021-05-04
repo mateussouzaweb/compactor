@@ -1,6 +1,8 @@
 package compactor
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 // Compress struct
 type Compress struct {
@@ -35,13 +37,13 @@ type Options struct {
 	Destination string
 	Development bool
 	Watch       bool
+	Include     []string
+	Exclude     []string
+	Ignore      []string
 	Compress    Compress
 	SourceMap   SourceMap
 	Progressive Progressive
 	Bundles     []Bundle
-	Include     []string
-	Exclude     []string
-	Ignore      []string
 }
 
 // CanProcess check if item can be processed based on include and exclude list
@@ -59,18 +61,6 @@ func (o *Options) CanProcess(item string, include []string, exclude []string) bo
 
 	for _, v := range include {
 		if v == item {
-			return true
-		}
-	}
-
-	return false
-}
-
-// ShouldIgnore return if processing should be ignored for given context
-func (o *Options) ShouldIgnore(context *Context) bool {
-
-	for _, v := range o.Ignore {
-		if v == context.Path {
 			return true
 		}
 	}
@@ -105,6 +95,18 @@ func (o *Options) ShouldSkip(context *Context) bool {
 			return true
 		}
 
+	}
+
+	return false
+}
+
+// ShouldIgnore return if processing should be ignored for given context
+func (o *Options) ShouldIgnore(context *Context) bool {
+
+	for _, v := range o.Ignore {
+		if v == context.Path {
+			return true
+		}
 	}
 
 	return false
