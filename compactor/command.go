@@ -12,7 +12,7 @@ func ExecCommand(cmd string, args ...string) (string, error) {
 
 	if err != nil {
 		_args := strings.Join(args, " ")
-		return "", fmt.Errorf("Command error: %s %s\n%v\n%s", cmd, _args, err, string(output))
+		return "", fmt.Errorf("command error: %s %s\n%v\n%s", cmd, _args, err, string(output))
 	}
 
 	return string(output), nil
