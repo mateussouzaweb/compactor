@@ -18,7 +18,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		args = append(args, "--compress", "--comments")
 	}
 
-	if options.GenerateSourceMap(context) {
+	if options.ShouldGenerateSourceMap(context) {
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
 			"filename='" + context.File + ".map'",

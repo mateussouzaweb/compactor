@@ -120,8 +120,8 @@ func (o *Options) ShouldCompress(context *Context) bool {
 	return o.CanProcess(context.Extension, o.Compress.Include, o.Compress.Exclude)
 }
 
-// GenerateSourceMap return if source map should be generated for given context
-func (o *Options) GenerateSourceMap(context *Context) bool {
+// ShouldGenerateSourceMap return if source map should be generated for given context
+func (o *Options) ShouldGenerateSourceMap(context *Context) bool {
 
 	if !o.SourceMap.Enabled {
 		return false
@@ -130,8 +130,8 @@ func (o *Options) GenerateSourceMap(context *Context) bool {
 	return o.CanProcess(context.Extension, o.SourceMap.Include, o.SourceMap.Exclude)
 }
 
-// GenerateProgressive return if progressive formats should be generated for given context
-func (o *Options) GenerateProgressive(context *Context) bool {
+// ShouldGenerateProgressive return if progressive formats should be generated for given context
+func (o *Options) ShouldGenerateProgressive(context *Context) bool {
 
 	if !o.Progressive.Enabled {
 		return false

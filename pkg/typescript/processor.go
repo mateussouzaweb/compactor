@@ -23,7 +23,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		"--removeComments",
 	}
 
-	if options.GenerateSourceMap(context) {
+	if options.ShouldGenerateSourceMap(context) {
 		args = append(args, "--sourceMap", "--inlineSources")
 	}
 
@@ -47,7 +47,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 			"--comments",
 		}
 
-		if options.GenerateSourceMap(context) {
+		if options.ShouldGenerateSourceMap(context) {
 
 			file := strings.Replace(
 				context.File, ".ts", ".js", 1,

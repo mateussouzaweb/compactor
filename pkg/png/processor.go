@@ -26,7 +26,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		}
 	}
 
-	if options.GenerateProgressive(context) {
+	if options.ShouldGenerateProgressive(context) {
 		err = webp.CreateCopy(context.Source, context.Destination, 75)
 	}
 

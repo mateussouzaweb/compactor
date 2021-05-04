@@ -24,7 +24,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 		args = append(args, "--style", "compressed")
 	}
 
-	if options.GenerateSourceMap(context) {
+	if options.ShouldGenerateSourceMap(context) {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
