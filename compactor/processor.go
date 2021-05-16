@@ -2,38 +2,29 @@ package compactor
 
 import (
 	"path/filepath"
-	"strings"
 )
 
-// Extension struct
-type Extension string
-
-// Context struct
-type Context struct {
-	File        string
-	Extension   string
-	Path        string
-	Source      string
-	Destination string
-	Processed   bool
-	Skipped     bool
-	Ignored     bool
-}
-
 // Processor struct
-type Processor func(context *Context, options *Options) error
+type Processor func(files []string, bundle *Bundle, logger *Logger) error
 
 // Processors struct
 type Processors []Processor
 
-// Instance struct
-type Instance map[Extension]Processors
+// ProcessorsMap struct
+type ProcessorsMap map[string]Processors
 
-// Instance var
-var _processors = Instance{}
+// Bundles struct
+type Bundles []*Bundle
 
-// Add processor to the instance
-func Add(extension Extension, processor Processor) {
+// Default bundle used as model
+var Default = &Bundle{}
+
+// Variables
+var _processors = ProcessorsMap{}
+var _bundles = Bundles{}
+
+// RegisterProcessor register a new processor for the extension
+func RegisterProcessor(extension string, processor Processor) {
 
 	if _, ok := _processors[extension]; !ok {
 		_processors[extension] = Processors{}
@@ -43,69 +34,118 @@ func Add(extension Extension, processor Processor) {
 
 }
 
-// Remove processor from the instance
-func Remove(extension Extension) {
+// RemoveProcessors removes all processors for the extension
+func RemoveProcessors(extension string) {
+
 	if _, ok := _processors[extension]; ok {
 		_processors[extension] = Processors{}
 	}
+
 }
 
-// Process file
-func Process(file string, options *Options) (*Context, error) {
+// RetrieveProcessors for given extension
+func RetrieveProcessors(extension string) Processors {
 
-	var err error
-	var match bool
-
-	context := &Context{
-		File:        filepath.Base(file),
-		Extension:   strings.TrimLeft(filepath.Ext(file), "."),
-		Path:        strings.Replace(file, options.Source, "", 1),
-		Source:      file,
-		Destination: strings.Replace(file, options.Source, options.Destination, 1),
+	if _, ok := _processors[extension]; ok {
+		return _processors[extension]
 	}
 
-	if options.ShouldIgnore(context) {
-		context.Ignored = true
-		return context, err
+	return Processors{}
+}
+
+// NewBundle create a new bundle instance from default bundle
+func NewBundle() *Bundle {
+
+	bundle := *Default
+	bundle.Files = []string{}
+
+	return &bundle
+}
+
+// RetrieveBundles get a list of all registered bundles
+func RetrieveBundles() Bundles {
+	return _bundles
+}
+
+// RetrieveBundleFor retrieve the related bundle of the file
+func RetrieveBundleFor(file string) *Bundle {
+
+	for _, bundle := range _bundles {
+
+		compare := bundle.CleanPath(file)
+		for _, fileInPackage := range bundle.Files {
+
+			if fileInPackage == compare {
+				return bundle
+			}
+
+			match, err := filepath.Match(compare, fileInPackage)
+
+			if err != nil {
+				continue
+			}
+			if match {
+				return bundle
+			}
+
+		}
+
 	}
 
-	if options.ShouldSkip(context) {
-		context.Skipped = true
-		return context, err
-	}
+	bundle := NewBundle()
+	bundle.Target = bundle.CleanPath(file)
+	bundle.AddFile(file)
+
+	RegisterBundle(bundle)
+
+	return bundle
+}
+
+// RegisterBundle register a bundle into the index
+func RegisterBundle(bundle *Bundle) {
+	_bundles = append(_bundles, bundle)
+}
+
+// Process package by running processors
+func Process(bundle *Bundle) (Logger, error) {
 
 	// Make sure folder exists to avoid issues
-	err = EnsureDirectory(context.Destination)
+	err := EnsureDirectory(bundle.DestinationPath(bundle.Target))
+	logger := Logger{}
 
 	if err != nil {
-		return context, err
+		return logger, err
+	}
+
+	// Retrieve processable file list and do basic logging on files
+	files := []string{}
+	for _, file := range bundle.GetFiles() {
+		if bundle.ShouldSkip(file) {
+			logger.AddSkipped(file)
+		} else if bundle.ShouldIgnore(file) {
+			logger.AddIgnored(file)
+		} else {
+			files = append(files, file)
+		}
+	}
+
+	if len(files) == 0 {
+		return logger, nil
+	}
+
+	processors := RetrieveProcessors(bundle.CleanExtension(files[0]))
+
+	if len(processors) == 0 {
+		processors = RetrieveProcessors("*")
 	}
 
 	// Extension processors
-	for extension, extensionProcessors := range _processors {
-		if context.Extension == string(extension) && len(extensionProcessors) > 0 {
-
-			for _, processor := range extensionProcessors {
-				err = processor(context, options)
-				if err != nil {
-					return context, err
-				}
-			}
-
-			match = true
-			break
+	for _, callback := range processors {
+		err = callback(files, bundle, &logger)
+		if err != nil {
+			return logger, err
 		}
 	}
 
-	// Generic processors
-	if !match {
-		for _, processor := range _processors["*"] {
-			err = processor(context, options)
-			if err != nil {
-				return context, err
-			}
-		}
-	}
-
-	return context, err
+	return logger, err
 }

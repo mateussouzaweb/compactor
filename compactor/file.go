@@ -7,11 +7,11 @@ import (
 	"os"
 )
 
-// GetPermission retrieve file permission from filename
-func GetPermission(filename string) (fs.FileMode, error) {
+// GetPermission retrieve file permission from file
+func GetPermission(file string) (fs.FileMode, error) {
 
 	var perm fs.FileMode
-	info, err := os.Stat(filename)
+	info, err := os.Stat(file)
 
 	if err != nil {
 		return perm, err
@@ -23,19 +23,19 @@ func GetPermission(filename string) (fs.FileMode, error) {
 }
 
 // ExistFile check if file exists
-func ExistFile(filename string) bool {
+func ExistFile(file string) bool {
 
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return false
 	}
 
 	return true
 }
 
-// ReadFile retrieve file content from filename
-func ReadFile(filename string) (string, error) {
+// ReadFile retrieve file content from file
+func ReadFile(file string) (string, error) {
 
-	content, err := ioutil.ReadFile(filename)
+	content, err := ioutil.ReadFile(file)
 
 	if err != nil {
 		return "", err
@@ -44,16 +44,16 @@ func ReadFile(filename string) (string, error) {
 	return string(content), nil
 }
 
-// ReadFileAndPermission retrieve file content and permissions from filename
-func ReadFileAndPermission(filename string) (string, fs.FileMode, error) {
+// ReadFileAndPermission retrieve file content and permissions from file
+func ReadFileAndPermission(file string) (string, fs.FileMode, error) {
 
-	perm, err := GetPermission(filename)
+	perm, err := GetPermission(file)
 
 	if err != nil {
 		return "", perm, err
 	}
 
-	content, err := ReadFile(filename)
+	content, err := ReadFile(file)
 
 	return content, perm, err
 }
@@ -79,9 +79,9 @@ func ReadFiles(files []string) (string, error) {
 }
 
 // WriteFile write content on file
-func WriteFile(filename string, content string, perm fs.FileMode) error {
+func WriteFile(file string, content string, perm fs.FileMode) error {
 
-	err := ioutil.WriteFile(filename, []byte(content), perm)
+	err := ioutil.WriteFile(file, []byte(content), perm)
 
 	if err != nil {
 		return err
@@ -105,10 +105,10 @@ func CopyFile(source string, destination string) error {
 }
 
 // DeleteFile remove a file
-func DeleteFile(filename string) error {
+func DeleteFile(file string) error {
 
-	if ExistFile(filename) {
-		return os.Remove(filename)
+	if ExistFile(file) {
+		return os.Remove(file)
 	}
 
 	return nil
@@ -125,11 +125,11 @@ func RenameFile(source string, destination string) error {
 }
 
 // ChmodFile apply permission to file
-func ChmodFile(filename string, perm fs.FileMode) error {
-	return os.Chmod(filename, perm)
+func ChmodFile(file string, perm fs.FileMode) error {
+	return os.Chmod(file, perm)
 }
 
 // ChmodFile apply permission to file
-func ChownFile(filename string, user int, group int) error {
-	return os.Chown(filename, user, group)
+func ChownFile(file string, user int, group int) error {
+	return os.Chown(file, user, group)
 }

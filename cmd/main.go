@@ -25,6 +25,7 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
+// Colors
 var (
 	Reset   = "\033[0m"
 	Red     = "\033[31m"
@@ -53,57 +54,185 @@ func trueOrFalse(value string) bool {
 	return false
 }
 
+func processBundle(bundle *compactor.Bundle) {
+
+	logger, err := compactor.Process(bundle)
+
+	if err != nil {
+		print(Fatal, "[ERROR] %s\n", bundle.Target)
+		print(Warn, "%v\n", err)
+		return
+	}
+
+	for _, l := range logger.Processed {
+		print(Success, "[PROCESSED] %s\n", bundle.CleanPath(l))
+	}
+	for _, l := range logger.Skipped {
+		print(Warn, "[SKIPPED] %s\n", bundle.CleanPath(l))
+	}
+	for _, l := range logger.Ignored {
+		print(Warn, "[IGNORED] %s\n", bundle.CleanPath(l))
+	}
+	for _, l := range logger.Written {
+		print(Success, "[WRITTEN] %s\n", bundle.CleanPath(l))
+	}
+	for _, l := range logger.Deleted {
+		print(Warn, "[DELETED] %s\n", bundle.CleanPath(l))
+	}
+
+}
+
+func processFile(file string) {
+
+	bundle := compactor.RetrieveBundleFor(file)
+	processBundle(bundle)
+
+}
+
+func deleteFile(file string) {
+
+	bundle := compactor.RetrieveBundleFor(file)
+	bundle.RemoveFile(file)
+
+	clean := bundle.CleanPath(file)
+	target := bundle.DestinationPath(bundle.Target)
+	err := compactor.DeleteFile(target)
+
+	if err != nil {
+		print(Fatal, "[ERROR] %s\n", clean)
+		print(Warn, "%v\n", err)
+	}
+
+	destination := bundle.DestinationPath(file)
+	err = compactor.DeleteFile(destination)
+
+	if err != nil {
+		print(Fatal, "[ERROR] %s\n", clean)
+		print(Warn, "%v\n", err)
+	} else {
+		print(Warn, "[DELETED] %s\n", clean)
+	}
+
+	processBundle(bundle)
+
+}
+
+func runWatcher(path string) {
+
+	w := watcher.New()
+
+	go func() {
+		for {
+			select {
+			case event := <-w.Event:
+				if !event.IsDir() {
+
+					if event.Op&watcher.Create == watcher.Create {
+						processFile(event.Path)
+					} else if event.Op&watcher.Write == watcher.Write {
+						processFile(event.Path)
+					} else if event.Op&watcher.Chmod == watcher.Chmod {
+						processFile(event.Path)
+					} else if event.Op&watcher.Rename == watcher.Rename {
+						deleteFile(event.OldPath)
+						processFile(event.Path)
+					} else if event.Op&watcher.Move == watcher.Move {
+						deleteFile(event.OldPath)
+						processFile(event.Path)
+					} else if event.Op&watcher.Remove == watcher.Remove {
+						deleteFile(event.Path)
+					}
+
+				}
+			case err := <-w.Error:
+				log.Fatalln(err)
+			case <-w.Closed:
+				return
+			}
+		}
+	}()
+
+	err := w.AddRecursive(path)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = w.Start(time.Millisecond * 100)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+}
+
 func main() {
 
-	// Options
+	watch := false
+	version := false
 	source, _ := filepath.Abs("src/")
 	destination, _ := filepath.Abs("dist/")
+	bundles := map[string][]string{}
 
-	options := compactor.Options{
+	options := compactor.Bundle{
 		Source:      source,
 		Destination: destination,
-		Development: false,
-		Watch:       false,
+		Target:      destination,
+		Compress:    compactor.Compress{Enabled: true},
+		SourceMap:   compactor.SourceMap{Enabled: true},
+		Progressive: compactor.Progressive{Enabled: true},
+		Files:       []string{},
 		Include:     []string{},
 		Exclude:     []string{},
 		Ignore:      []string{},
-		Compress: compactor.Compress{
-			Enabled: true,
-		},
-		SourceMap: compactor.SourceMap{
-			Enabled: true,
-		},
-		Progressive: compactor.Progressive{
-			Enabled: true,
-		},
-		Bundles: []compactor.Bundle{},
 	}
 
 	// Parsers
-	compactor.Add("*", generic.Processor)
-	compactor.Add("sass", sass.Processor)
-	compactor.Add("scss", sass.Processor)
-	compactor.Add("css", css.Processor)
-	compactor.Add("ts", typescript.Processor)
-	compactor.Add("tsx", typescript.Processor)
-	compactor.Add("js", javascript.Processor)
-	compactor.Add("json", json.Processor)
-	compactor.Add("xml", xml.Processor)
-	compactor.Add("html", html.Processor)
-	compactor.Add("htm", html.Processor)
-	compactor.Add("svg", svg.Processor)
-	compactor.Add("gif", gif.Processor)
-	compactor.Add("jpeg", jpeg.Processor)
-	compactor.Add("jpg", jpeg.Processor)
-	compactor.Add("png", png.Processor)
-	compactor.Add("webp", webp.Processor)
+	compactor.RegisterProcessor("*", generic.Processor)
+	compactor.RegisterProcessor("sass", sass.Processor)
+	compactor.RegisterProcessor("scss", sass.Processor)
+	compactor.RegisterProcessor("css", css.Processor)
+	compactor.RegisterProcessor("ts", typescript.Processor)
+	compactor.RegisterProcessor("tsx", typescript.Processor)
+	compactor.RegisterProcessor("js", javascript.Processor)
+	compactor.RegisterProcessor("json", json.Processor)
+	compactor.RegisterProcessor("xml", xml.Processor)
+	compactor.RegisterProcessor("html", html.Processor)
+	compactor.RegisterProcessor("htm", html.Processor)
+	compactor.RegisterProcessor("svg", svg.Processor)
+	compactor.RegisterProcessor("gif", gif.Processor)
+	compactor.RegisterProcessor("jpeg", jpeg.Processor)
+	compactor.RegisterProcessor("jpg", jpeg.Processor)
+	compactor.RegisterProcessor("png", png.Processor)
+	compactor.RegisterProcessor("webp", webp.Processor)
+
+	// compactor.RegisterProcessor("less", less.Processor)
+	// compactor.RegisterProcessor("styl", stylus.Processor)
+	// compactor.RegisterProcessor("apng", apng.Processor)
+	// compactor.RegisterProcessor("avif", avif.Processor)
+	// compactor.RegisterProcessor("ico", ico.Processor)
+	// compactor.RegisterProcessor("js", babel.Processor)
+	// compactor.RegisterProcessor("js", react.Processor)
+	// compactor.RegisterProcessor("jsx", react.Processor)
+	// compactor.RegisterProcessor("js", vue.Processor)
+	// compactor.RegisterProcessor("vue", vue.Processor)
+	// compactor.RegisterProcessor("js", svelte.Processor)
+	// compactor.RegisterProcessor("svelte", svelte.Processor)
+	// compactor.RegisterProcessor("coffee", coffee.Processor)
+	// compactor.RegisterProcessor("elm", elm.Processor)
+	// compactor.RegisterProcessor("eot", eot.Processor)
+	// compactor.RegisterProcessor("ttf", ttf.Processor)
+	// compactor.RegisterProcessor("woff", woff.Processor)
+	// compactor.RegisterProcessor("gql", graphql.Processor)
+	// compactor.RegisterProcessor("graphql", graphql.Processor)
+	// compactor.RegisterProcessor("yaml", yaml.Processor)
+	// compactor.RegisterProcessor("toml", toml.Processor)
 
 	// Command line flags
 	flag.Func(
 		"source",
 		"Path of project source files [DEFAULT: /src]",
 		func(path string) error {
-			options.Source, _ = filepath.Abs(path)
+			source, _ = filepath.Abs(path)
+			options.Source = source
 			return nil
 		})
 
@@ -111,21 +240,10 @@ func main() {
 		"destination",
 		"Path to the destination folder [DEFAULT: /dist]",
 		func(path string) error {
-			options.Destination, _ = filepath.Abs(path)
+			destination, _ = filepath.Abs(path)
+			options.Destination = destination
 			return nil
 		})
-
-	flag.BoolVar(
-		&options.Development,
-		"development",
-		options.Development,
-		"Run on development mode (no compression) [DEFAULT: false]")
-
-	flag.BoolVar(
-		&options.Watch,
-		"watch",
-		options.Watch,
-		"Enable watcher for live compilation [DEFAULT: false]")
 
 	flag.Func(
 		"include",
@@ -163,12 +281,21 @@ func main() {
 			enabled := trueOrFalse(split[0])
 
 			if len(split) > 1 {
-				extensions := strings.Split(split[1], ",")
+
+				patterns := strings.Split(split[1], ",")
+
 				if enabled {
-					options.Compress.Include = append(options.Compress.Include, extensions...)
+					options.Compress.Include = append(
+						options.Compress.Include,
+						patterns...,
+					)
 				} else {
-					options.Compress.Exclude = append(options.Compress.Exclude, extensions...)
+					options.Compress.Exclude = append(
+						options.Compress.Exclude,
+						patterns...,
+					)
 				}
+
 			} else {
 				options.Compress.Enabled = enabled
 			}
@@ -185,12 +312,21 @@ func main() {
 			enabled := trueOrFalse(split[0])
 
 			if len(split) > 1 {
-				extensions := strings.Split(split[1], ",")
+
+				patterns := strings.Split(split[1], ",")
+
 				if enabled {
-					options.SourceMap.Include = append(options.SourceMap.Include, extensions...)
+					options.SourceMap.Include = append(
+						options.SourceMap.Include,
+						patterns...,
+					)
 				} else {
-					options.SourceMap.Exclude = append(options.SourceMap.Exclude, extensions...)
+					options.SourceMap.Exclude = append(
+						options.SourceMap.Exclude,
+						patterns...,
+					)
 				}
+
 			} else {
 				options.SourceMap.Enabled = enabled
 			}
@@ -207,12 +343,21 @@ func main() {
 			enabled := trueOrFalse(split[0])
 
 			if len(split) > 1 {
-				extensions := strings.Split(split[1], ",")
+
+				patterns := strings.Split(split[1], ",")
+
 				if enabled {
-					options.Progressive.Include = append(options.Progressive.Include, extensions...)
+					options.Progressive.Include = append(
+						options.Progressive.Include,
+						patterns...,
+					)
 				} else {
-					options.Progressive.Exclude = append(options.Progressive.Exclude, extensions...)
+					options.Progressive.Exclude = append(
+						options.Progressive.Exclude,
+						patterns...,
+					)
 				}
+
 			} else {
 				options.Progressive.Enabled = enabled
 			}
@@ -222,17 +367,14 @@ func main() {
 
 	flag.Func(
 		"bundle",
-		"Create bundled final version from multiple files. Map matching files from the given pattern to destination",
+		"Create bundled final version from multiple files. Map matching files from the given pattern to target destination",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
-			destination := split[0]
+			target := split[0]
 			files := strings.Split(split[1], ",")
 
-			options.Bundles = append(options.Bundles, compactor.Bundle{
-				Destination: destination,
-				Files:       files,
-			})
+			bundles[target] = files
 
 			return nil
 		})
@@ -244,135 +386,84 @@ func main() {
 
 			list := strings.Split(value, ",")
 			for _, item := range list {
-				compactor.Remove(compactor.Extension(item))
+				compactor.RemoveProcessors(item)
 			}
 
 			return nil
 		})
 
+	flag.BoolVar(
+		&watch,
+		"watch",
+		false,
+		"Enable watcher for live compilation [DEFAULT: false]")
+
+	flag.BoolVar(
+		&version,
+		"version",
+		false,
+		"Print program version")
+
 	// Parse values
-	version := flag.Bool("version", false, "Print program version")
 	flag.Parse()
 
 	// Print information
-	if *version {
-		print("", "Compactor version 0.0.2\n")
+	if version {
+		print("", "Compactor version 0.0.3\n")
 		return
 	}
 
-	print(Purple, ":::| COMPACTOR - 0.0.2 |:::\n")
-	print(Info, "[INFO] Files source folder is %s\n", options.Source)
-	print(Info, "[INFO] Files destination folder is %s\n", options.Destination)
+	print(Purple, ":::| COMPACTOR - 0.0.3 |:::\n")
+	print(Info, "[INFO] Files source folder is %s\n", source)
+	print(Info, "[INFO] Files destination folder is %s\n", destination)
 
-	if !compactor.ExistDirectory(options.Source) {
+	if !compactor.ExistDirectory(source) {
 		print(Fatal, "[ERROR] Files source folder does not exists\n")
 		return
 	}
 
-	if options.Watch {
-		print(Info, "[INFO] Running in watch mode!\n")
-		runDefault(&options)
-		runWatcher(&options)
-	} else {
-		print(Info, "[INFO] Running in process and exit mode\n")
-		runDefault(&options)
-	}
+	// Set as default model
+	compactor.Default = &options
 
-}
+	// Create custom defined bundles to process
+	for target, files := range bundles {
 
-func runWatcher(options *compactor.Options) {
+		bundle := compactor.NewBundle()
+		bundle.Target = bundle.CleanPath(target)
 
-	w := watcher.New()
-
-	go func() {
-		for {
-			select {
-			case event := <-w.Event:
-
-				// print(Warn, "[EVENT] %v\n", event)
-
-				if !event.IsDir() {
-					if event.Op&watcher.Create == watcher.Create {
-						processFile(event.Path, options)
-					} else if event.Op&watcher.Write == watcher.Write {
-						processFile(event.Path, options)
-					} else if event.Op&watcher.Chmod == watcher.Chmod {
-						processFile(event.Path, options)
-					} else if event.Op&watcher.Rename == watcher.Rename {
-						deleteFile(event.OldPath, options)
-						processFile(event.Path, options)
-					} else if event.Op&watcher.Move == watcher.Move {
-						deleteFile(event.OldPath, options)
-						processFile(event.Path, options)
-					} else if event.Op&watcher.Remove == watcher.Remove {
-						deleteFile(event.Path, options)
-					}
-				}
-
-			case err := <-w.Error:
-				log.Fatalln(err)
-			case <-w.Closed:
-				return
-			}
+		for _, file := range files {
+			bundle.AddFile(file)
 		}
-	}()
 
-	err := w.AddRecursive(options.Source)
-	if err != nil {
-		log.Fatalln(err)
+		compactor.RegisterBundle(bundle)
+
 	}
 
-	err = w.Start(time.Millisecond * 100)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-}
-
-func runDefault(options *compactor.Options) {
-
+	// Create default bundles from files
 	files, err := compactor.ListFiles(options.Source)
 
 	if err != nil {
-		log.Fatalln(err)
+		print(Fatal, "[ERROR] Bundles could not be created: %v\n", err)
+		return
 	}
 
-	for _, filename := range files {
-		processFile(filename, options)
+	for _, file := range files {
+		_ = compactor.RetrieveBundleFor(file)
 	}
 
-}
-
-func processFile(filename string, options *compactor.Options) {
-
-	context, err := compactor.Process(
-		filename,
-		options,
-	)
-
-	if err != nil {
-		print(Fatal, "[ERROR] %s\n", context.Path)
-		print(Warn, "%v\n", err)
-	} else if context.Skipped {
-		print(Warn, "[SKIPPED] %s\n", context.Path)
-	} else if context.Processed {
-		print(Success, "[PROCESSED] %s\n", context.Path)
-	}
-
-}
-
-func deleteFile(filename string, options *compactor.Options) {
-
-	clean := strings.Replace(filename, options.Source, "", 1)
-	destination := strings.Replace(filename, options.Source, options.Destination, 1)
-
-	err := compactor.DeleteFile(destination)
-
-	if err != nil {
-		print(Fatal, "[ERROR] %s\n", clean)
-		print(Warn, "%v\n", err)
+	// Run compactor processing
+	if watch {
+		print(Info, "[INFO] Running in watch mode!\n")
 	} else {
-		print(Warn, "[DELETED] %s\n", clean)
+		print(Info, "[INFO] Running in process and exit mode\n")
+	}
+
+	for _, bundle := range compactor.RetrieveBundles() {
+		processBundle(bundle)
+	}
+
+	if watch {
+		runWatcher(options.Source)
 	}
 
 }

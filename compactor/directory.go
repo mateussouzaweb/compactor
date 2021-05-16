@@ -67,9 +67,9 @@ func ExistDirectory(path string) bool {
 }
 
 // EnsureDirectory makes sure directory exists from file path
-func EnsureDirectory(filename string) error {
+func EnsureDirectory(file string) error {
 
-	path := filepath.Dir(filename)
+	path := filepath.Dir(file)
 
 	if !ExistDirectory(path) {
 
