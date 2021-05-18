@@ -1,7 +1,7 @@
 package compactor
 
 // Processor struct
-type Processor func(bundle *Bundle, logger *Logger) error
+type Processor func(action *Action, bundle *Bundle, logger *Logger) error
 
 // Processors struct
 type Processors []Processor
@@ -75,6 +75,7 @@ func RetrieveBundleFor(file string) *Bundle {
 
 	bundle := NewBundle()
 	bundle.AddFile(file)
+	bundle.Destination.File = bundle.CleanPath(file)
 
 	RegisterBundle(bundle)
 
@@ -89,22 +90,14 @@ func RegisterBundle(bundle *Bundle) {
 // Process package by running processors
 func Process(bundle *Bundle) (Logger, error) {
 
-	logger := Logger{}
-	files := bundle.GetFiles()
 	destination, isDir := bundle.GetDestination()
+	action := Action{Type: "PROCESS", Multiple: isDir}
+	logger := Logger{}
 
-	// If empty file list, stop and also remove destination file if necessary
+	// Determine action based on processable list
+	files := bundle.GetFiles()
 	if len(files) == 0 {
-
-		if !isDir && ExistFile(destination) {
-			err := DeleteFile(destination)
-			if err != nil {
-				return logger, err
-			}
-			logger.AddDeleted(destination)
-		}
-
-		return logger, nil
+		action.Type = "DELETE"
 	}
 
 	// Make sure folder exists to avoid issues
@@ -124,7 +117,7 @@ func Process(bundle *Bundle) (Logger, error) {
 
 	// Extension processors
 	for _, callback := range processors {
-		err = callback(bundle, &logger)
+		err = callback(&action, bundle, &logger)
 		if err != nil {
 			return logger, err
 		}

@@ -227,7 +227,7 @@ func (b *Bundle) GetFiles() []string {
 
 	for _, file := range b.Source.Files {
 
-		if b.ShouldSkip(file) || !b.ShouldIgnore(file) {
+		if b.ShouldSkip(file) || b.ShouldIgnore(file) {
 			continue
 		}
 
