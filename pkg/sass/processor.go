@@ -4,18 +4,23 @@ import (
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // Sass processor
-func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
+func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+
+	if action.IsDelete() {
+		return generic.DeleteProcessor(bundle, logger, []string{".map"})
+	}
 
 	files := bundle.GetFiles()
-	target, isDir := bundle.GetDestination()
+	target := bundle.GetDestination()
 	multiple := []string{}
 
 	for _, file := range files {
 
-		if !isDir {
+		if !bundle.IsToMultipleDestinations() {
 			multiple = append(multiple, file)
 			continue
 		}
@@ -49,7 +54,7 @@ func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
 	}
 
-	if isDir {
+	if bundle.IsToMultipleDestinations() {
 		return nil
 	}
 

@@ -2,10 +2,15 @@ package gif
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // GIF processor
-func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
+func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+
+	if action.IsDelete() {
+		return generic.DeleteProcessor(bundle, logger, []string{})
+	}
 
 	files := bundle.GetFiles()
 

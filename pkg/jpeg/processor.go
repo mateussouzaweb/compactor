@@ -2,11 +2,16 @@ package jpeg
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/webp"
 )
 
 // JPEG processor
-func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
+func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+
+	if action.IsDelete() {
+		return generic.DeleteProcessor(bundle, logger, []string{".webp"})
+	}
 
 	files := bundle.GetFiles()
 

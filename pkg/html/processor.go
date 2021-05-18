@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // HTML minify
@@ -51,10 +52,14 @@ func Minify(content string) (string, error) {
 }
 
 // HTML processor
-func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
+func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+
+	if action.IsDelete() {
+		return generic.DeleteProcessor(bundle, logger, []string{})
+	}
 
 	files := bundle.GetFiles()
-	target, isDir := bundle.GetDestination()
+	target := bundle.GetDestination()
 	result := ""
 
 	for _, file := range files {
@@ -77,7 +82,7 @@ func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 			}
 		}
 
-		if !isDir {
+		if !bundle.IsToMultipleDestinations() {
 			result += content
 			continue
 		}
@@ -99,7 +104,7 @@ func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
 	}
 
-	if isDir {
+	if bundle.IsToMultipleDestinations() {
 		return nil
 	}
 

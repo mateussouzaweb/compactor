@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // CreateCopy make a WEBP copy of a image file from almost any format
@@ -24,7 +25,11 @@ func CreateCopy(source string, destination string, quality int) error {
 }
 
 // WEBP processor
-func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
+func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+
+	if action.IsDelete() {
+		return generic.DeleteProcessor(bundle, logger, []string{})
+	}
 
 	files := bundle.GetFiles()
 
