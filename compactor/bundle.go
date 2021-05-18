@@ -5,6 +5,21 @@ import (
 	"strings"
 )
 
+// Source struct
+type Source struct {
+	Path    string
+	Files   []string
+	Include []string
+	Exclude []string
+	Ignore  []string
+}
+
+// Destination struct
+type Destination struct {
+	Path string
+	File string
+}
+
 // Compress struct
 type Compress struct {
 	Enabled bool
@@ -28,16 +43,11 @@ type Progressive struct {
 
 // Bundle struct
 type Bundle struct {
-	Source      string
-	Destination string
-	Target      string
+	Source      Source
+	Destination Destination
 	Compress    Compress
 	SourceMap   SourceMap
 	Progressive Progressive
-	Files       []string
-	Include     []string
-	Exclude     []string
-	Ignore      []string
 }
 
 // Return the clean file name, with extension
@@ -53,22 +63,12 @@ func (b *Bundle) CleanExtension(file string) string {
 // Return the clean file, without source and destination path
 func (b *Bundle) CleanPath(file string) string {
 
-	file = strings.Replace(file, b.Source, "", 1)
-	file = strings.Replace(file, b.Destination, "", 1)
+	file = strings.Replace(file, b.Source.Path, "", 1)
+	file = strings.Replace(file, b.Destination.Path, "", 1)
 	file = strings.TrimLeft(file, "/")
 	file = strings.TrimLeft(file, "\\")
 
 	return file
-}
-
-// Return the full source path for file
-func (b *Bundle) SourcePath(file string) string {
-	return filepath.Join(b.Source, b.CleanPath(file))
-}
-
-// Return the full destination path for file
-func (b *Bundle) DestinationPath(file string) string {
-	return filepath.Join(b.Destination, b.CleanPath(file))
 }
 
 // MatchPatterns return if file match one of the given patterns
@@ -95,11 +95,11 @@ func (b *Bundle) MatchPatterns(file string, patterns []string) bool {
 // ShouldSkip return if processing should be skipped for given file
 func (b *Bundle) ShouldSkip(file string) bool {
 
-	if b.MatchPatterns(file, b.Include) {
+	if b.MatchPatterns(file, b.Source.Include) {
 		return false
 	}
 
-	if b.MatchPatterns(file, b.Exclude) {
+	if b.MatchPatterns(file, b.Source.Exclude) {
 		return true
 	}
 
@@ -108,10 +108,10 @@ func (b *Bundle) ShouldSkip(file string) bool {
 
 // ShouldIgnore return if processing should be ignored for given file
 func (b *Bundle) ShouldIgnore(file string) bool {
-	return b.MatchPatterns(file, b.Ignore)
+	return b.MatchPatterns(file, b.Source.Ignore)
 }
 
-// ShouldCompress return if compress is enabled for given file
+// ShouldCompress return if compress should be enabled for given file
 func (b *Bundle) ShouldCompress(file string) bool {
 
 	if !b.Compress.Enabled {
@@ -162,42 +162,97 @@ func (b *Bundle) ShouldGenerateProgressive(file string) bool {
 	return true
 }
 
-// AddFile add file to bundle file list
+// AddFile add file to bundle source files
 func (b *Bundle) AddFile(file string) bool {
 
 	file = b.CleanPath(file)
 
-	if b.ShouldIgnore(file) || b.ShouldSkip(file) {
-		return false
-	}
-
-	for _, existing := range b.Files {
+	for _, existing := range b.Source.Files {
 		if existing == file {
 			return true
 		}
 	}
 
-	b.Files = append(b.Files, file)
+	b.Source.Files = append(b.Source.Files, file)
 
 	return true
 }
 
-// RemoveFile remove file from bundle file list
+// RemoveFile remove file from bundle source files
 func (b *Bundle) RemoveFile(file string) {
 
 	file = b.CleanPath(file)
 
-	for index, existing := range b.Files {
+	for index, existing := range b.Source.Files {
 		if existing == file {
-			b.Files = append(b.Files[:index], b.Files[index+1:]...)
+			b.Source.Files = append(
+				b.Source.Files[:index],
+				b.Source.Files[index+1:]...,
+			)
 			return
 		}
 	}
 
 }
 
-// Retrieve files from bundle
+// Contains check if file is in bundle source files
+func (b *Bundle) ContainsFile(file string) bool {
+
+	file = b.CleanPath(file)
+
+	for _, existing := range b.Source.Files {
+
+		if existing == file {
+			return true
+		}
+
+		match, err := filepath.Match(file, existing)
+
+		if err != nil {
+			continue
+		}
+		if match {
+			return true
+		}
+
+	}
+
+	return false
+}
+
+// Retrieve fullpath files from bundle source list
 func (b *Bundle) GetFiles() []string {
-	// TODO: read from pattern?
-	return b.Files
+
+	files := []string{}
+
+	for _, file := range b.Source.Files {
+
+		if b.ShouldSkip(file) || !b.ShouldIgnore(file) {
+			continue
+		}
+
+		path := filepath.Join(b.Source.Path, file)
+
+		if ExistFile(path) {
+			files = append(files, path)
+		}
+
+	}
+
+	return files
+}
+
+// Return the destination path and if is file or directory destination
+func (b *Bundle) GetDestination() (string, bool) {
+
+	if b.Destination.File != "" {
+		return filepath.Join(b.Destination.Path, b.Destination.File), false
+	}
+
+	return b.Destination.Path, true
+}
+
+// Transform and return the full destination path for file
+func (b *Bundle) ToDestination(file string) string {
+	return filepath.Join(b.Destination.Path, b.CleanPath(file))
 }

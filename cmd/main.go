@@ -59,25 +59,25 @@ func processBundle(bundle *compactor.Bundle) {
 	logger, err := compactor.Process(bundle)
 
 	if err != nil {
-		print(Fatal, "[ERROR] %s\n", bundle.Target)
+		print(Fatal, "[ERROR] %s\n", bundle.Destination)
 		print(Warn, "%v\n", err)
 		return
 	}
 
-	for _, l := range logger.Processed {
-		print(Success, "[PROCESSED] %s\n", bundle.CleanPath(l))
+	for _, f := range logger.Processed {
+		print(Success, "[PROCESSED] %s\n", bundle.CleanPath(f))
 	}
-	for _, l := range logger.Skipped {
-		print(Warn, "[SKIPPED] %s\n", bundle.CleanPath(l))
+	for _, f := range logger.Skipped {
+		print(Warn, "[SKIPPED] %s\n", bundle.CleanPath(f))
 	}
-	for _, l := range logger.Ignored {
-		print(Warn, "[IGNORED] %s\n", bundle.CleanPath(l))
+	for _, f := range logger.Ignored {
+		print(Warn, "[IGNORED] %s\n", bundle.CleanPath(f))
 	}
-	for _, l := range logger.Written {
-		print(Success, "[WRITTEN] %s\n", bundle.CleanPath(l))
+	for _, f := range logger.Written {
+		print(Success, "[WRITTEN] %s\n", bundle.CleanPath(f))
 	}
-	for _, l := range logger.Deleted {
-		print(Warn, "[DELETED] %s\n", bundle.CleanPath(l))
+	for _, f := range logger.Deleted {
+		print(Warn, "[DELETED] %s\n", bundle.CleanPath(f))
 	}
 
 }
@@ -93,25 +93,6 @@ func deleteFile(file string) {
 
 	bundle := compactor.RetrieveBundleFor(file)
 	bundle.RemoveFile(file)
-
-	clean := bundle.CleanPath(file)
-	target := bundle.DestinationPath(bundle.Target)
-	err := compactor.DeleteFile(target)
-
-	if err != nil {
-		print(Fatal, "[ERROR] %s\n", clean)
-		print(Warn, "%v\n", err)
-	}
-
-	destination := bundle.DestinationPath(file)
-	err = compactor.DeleteFile(destination)
-
-	if err != nil {
-		print(Fatal, "[ERROR] %s\n", clean)
-		print(Warn, "%v\n", err)
-	} else {
-		print(Warn, "[DELETED] %s\n", clean)
-	}
 
 	processBundle(bundle)
 
@@ -173,16 +154,11 @@ func main() {
 	bundles := map[string][]string{}
 
 	options := compactor.Bundle{
-		Source:      source,
-		Destination: destination,
-		Target:      destination,
+		Source:      compactor.Source{Path: source},
+		Destination: compactor.Destination{Path: destination},
 		Compress:    compactor.Compress{Enabled: true},
 		SourceMap:   compactor.SourceMap{Enabled: true},
 		Progressive: compactor.Progressive{Enabled: true},
-		Files:       []string{},
-		Include:     []string{},
-		Exclude:     []string{},
-		Ignore:      []string{},
 	}
 
 	// Parsers
@@ -232,7 +208,7 @@ func main() {
 		"Path of project source files [DEFAULT: /src]",
 		func(path string) error {
 			source, _ = filepath.Abs(path)
-			options.Source = source
+			options.Source.Path = source
 			return nil
 		})
 
@@ -241,7 +217,7 @@ func main() {
 		"Path to the destination folder [DEFAULT: /dist]",
 		func(path string) error {
 			destination, _ = filepath.Abs(path)
-			options.Destination = destination
+			options.Destination.Path = destination
 			return nil
 		})
 
@@ -250,7 +226,7 @@ func main() {
 		"Only include matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			options.Include = append(options.Include, patterns...)
+			options.Source.Include = append(options.Source.Include, patterns...)
 			return nil
 		})
 
@@ -259,7 +235,7 @@ func main() {
 		"Exclude matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			options.Exclude = append(options.Exclude, patterns...)
+			options.Source.Exclude = append(options.Source.Exclude, patterns...)
 			return nil
 		})
 
@@ -268,7 +244,7 @@ func main() {
 		"Ignore matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			options.Ignore = append(options.Ignore, patterns...)
+			options.Source.Ignore = append(options.Source.Ignore, patterns...)
 			return nil
 		})
 
@@ -367,7 +343,7 @@ func main() {
 
 	flag.Func(
 		"bundle",
-		"Create bundled final version from multiple files. Map matching files from the given pattern to target destination",
+		"Create bundled final version from one or multiple files. Map matching files from the given pattern to target destination file",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -429,7 +405,7 @@ func main() {
 	for target, files := range bundles {
 
 		bundle := compactor.NewBundle()
-		bundle.Target = bundle.CleanPath(target)
+		bundle.Destination.File = bundle.CleanPath(target)
 
 		for _, file := range files {
 			bundle.AddFile(file)
@@ -440,7 +416,7 @@ func main() {
 	}
 
 	// Create default bundles from files
-	files, err := compactor.ListFiles(options.Source)
+	files, err := compactor.ListFiles(options.Source.Path)
 
 	if err != nil {
 		print(Fatal, "[ERROR] Bundles could not be created: %v\n", err)
@@ -463,7 +439,7 @@ func main() {
 	}
 
 	if watch {
-		runWatcher(options.Source)
+		runWatcher(options.Source.Path)
 	}
 
 }

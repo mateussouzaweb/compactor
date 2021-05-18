@@ -1,11 +1,7 @@
 package compactor
 
-import (
-	"path/filepath"
-)
-
 // Processor struct
-type Processor func(files []string, bundle *Bundle, logger *Logger) error
+type Processor func(bundle *Bundle, logger *Logger) error
 
 // Processors struct
 type Processors []Processor
@@ -57,7 +53,8 @@ func RetrieveProcessors(extension string) Processors {
 func NewBundle() *Bundle {
 
 	bundle := *Default
-	bundle.Files = []string{}
+	bundle.Source.Files = []string{}
+	bundle.Destination.File = ""
 
 	return &bundle
 }
@@ -71,29 +68,12 @@ func RetrieveBundles() Bundles {
 func RetrieveBundleFor(file string) *Bundle {
 
 	for _, bundle := range _bundles {
-
-		compare := bundle.CleanPath(file)
-		for _, fileInPackage := range bundle.Files {
-
-			if fileInPackage == compare {
-				return bundle
-			}
-
-			match, err := filepath.Match(compare, fileInPackage)
-
-			if err != nil {
-				continue
-			}
-			if match {
-				return bundle
-			}
-
+		if bundle.ContainsFile(file) {
+			return bundle
 		}
-
 	}
 
 	bundle := NewBundle()
-	bundle.Target = bundle.CleanPath(file)
 	bundle.AddFile(file)
 
 	RegisterBundle(bundle)
@@ -109,31 +89,34 @@ func RegisterBundle(bundle *Bundle) {
 // Process package by running processors
 func Process(bundle *Bundle) (Logger, error) {
 
-	// Make sure folder exists to avoid issues
-	err := EnsureDirectory(bundle.DestinationPath(bundle.Target))
 	logger := Logger{}
+	files := bundle.GetFiles()
+	destination, isDir := bundle.GetDestination()
+
+	// If empty file list, stop and also remove destination file if necessary
+	if len(files) == 0 {
+
+		if !isDir && ExistFile(destination) {
+			err := DeleteFile(destination)
+			if err != nil {
+				return logger, err
+			}
+			logger.AddDeleted(destination)
+		}
+
+		return logger, nil
+	}
+
+	// Make sure folder exists to avoid issues
+	err := EnsureDirectory(destination)
 
 	if err != nil {
 		return logger, err
 	}
 
-	// Retrieve processable file list and do basic logging on files
-	files := []string{}
-	for _, file := range bundle.GetFiles() {
-		if bundle.ShouldSkip(file) {
-			logger.AddSkipped(file)
-		} else if bundle.ShouldIgnore(file) {
-			logger.AddIgnored(file)
-		} else {
-			files = append(files, file)
-		}
-	}
-
-	if len(files) == 0 {
-		return logger, nil
-	}
-
-	processors := RetrieveProcessors(bundle.CleanExtension(files[0]))
+	// Process by extension
+	extension := bundle.CleanExtension(files[0])
+	processors := RetrieveProcessors(extension)
 
 	if len(processors) == 0 {
 		processors = RetrieveProcessors("*")
@@ -141,7 +124,7 @@ func Process(bundle *Bundle) (Logger, error) {
 
 	// Extension processors
 	for _, callback := range processors {
-		err = callback(files, bundle, &logger)
+		err = callback(bundle, &logger)
 		if err != nil {
 			return logger, err
 		}
