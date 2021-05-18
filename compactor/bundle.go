@@ -43,6 +43,7 @@ type Progressive struct {
 
 // Bundle struct
 type Bundle struct {
+	Extension   string
 	Source      Source
 	Destination Destination
 	Compress    Compress

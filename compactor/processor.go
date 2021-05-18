@@ -53,8 +53,9 @@ func RetrieveProcessors(extension string) Processors {
 func NewBundle() *Bundle {
 
 	bundle := *Default
-	bundle.Source.Files = []string{}
+	bundle.Extension = ""
 	bundle.Destination.File = ""
+	bundle.Source.Files = []string{}
 
 	return &bundle
 }
@@ -74,8 +75,9 @@ func RetrieveBundleFor(file string) *Bundle {
 	}
 
 	bundle := NewBundle()
-	bundle.AddFile(file)
+	bundle.Extension = bundle.CleanExtension(file)
 	bundle.Destination.File = bundle.CleanPath(file)
+	bundle.AddFile(file)
 
 	RegisterBundle(bundle)
 
@@ -108,14 +110,13 @@ func Process(bundle *Bundle) (Logger, error) {
 	}
 
 	// Process by extension
-	extension := bundle.CleanExtension(files[0])
-	processors := RetrieveProcessors(extension)
+	processors := RetrieveProcessors(bundle.Extension)
 
 	if len(processors) == 0 {
 		processors = RetrieveProcessors("*")
 	}
 
-	// Extension processors
+	// Execute processors
 	for _, callback := range processors {
 		err = callback(&action, bundle, &logger)
 		if err != nil {

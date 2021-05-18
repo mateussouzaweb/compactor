@@ -154,6 +154,7 @@ func main() {
 	bundles := map[string][]string{}
 
 	options := compactor.Bundle{
+		Extension:   "*",
 		Source:      compactor.Source{Path: source},
 		Destination: compactor.Destination{Path: destination},
 		Compress:    compactor.Compress{Enabled: true},
@@ -405,6 +406,7 @@ func main() {
 	for target, files := range bundles {
 
 		bundle := compactor.NewBundle()
+		bundle.Extension = bundle.CleanExtension(files[0])
 		bundle.Destination.File = bundle.CleanPath(target)
 
 		for _, file := range files {
