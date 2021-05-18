@@ -242,14 +242,14 @@ func (b *Bundle) GetFiles() []string {
 	return files
 }
 
-// Return the destination path and if is file or directory destination
-func (b *Bundle) GetDestination() (string, bool) {
+// Detect if bundle processing should have multiple destinations
+func (b *Bundle) IsToMultipleDestinations() bool {
+	return b.Destination.File == ""
+}
 
-	if b.Destination.File != "" {
-		return filepath.Join(b.Destination.Path, b.Destination.File), false
-	}
-
-	return b.Destination.Path, true
+// Return the final destination file path
+func (b *Bundle) GetDestination() string {
+	return filepath.Join(b.Destination.Path, b.Destination.File)
 }
 
 // Transform and return the full destination path for file

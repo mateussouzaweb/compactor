@@ -90,9 +90,8 @@ func RegisterBundle(bundle *Bundle) {
 // Process package by running processors
 func Process(bundle *Bundle) (Logger, error) {
 
-	destination, isDir := bundle.GetDestination()
-	action := Action{Type: "PROCESS", Multiple: isDir}
 	logger := Logger{}
+	action := Action{Type: "PROCESS"}
 
 	// Determine action based on processable list
 	files := bundle.GetFiles()
@@ -101,6 +100,7 @@ func Process(bundle *Bundle) (Logger, error) {
 	}
 
 	// Make sure folder exists to avoid issues
+	destination := bundle.GetDestination()
 	err := EnsureDirectory(destination)
 
 	if err != nil {
