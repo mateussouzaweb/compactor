@@ -18,27 +18,64 @@ func Minify(content string) (string, error) {
 }
 
 // Json processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	content, perm, err := compactor.ReadFileAndPermission(context.Source)
+	files := bundle.GetFiles()
+	target, isDir := bundle.GetDestination()
+	result := ""
+
+	for _, file := range files {
+
+		content, err := compactor.ReadFile(file)
+
+		if err != nil {
+			return err
+		}
+
+		if bundle.ShouldCompress(file) {
+			content, err = Minify(content)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !isDir {
+			result += content
+			continue
+		}
+
+		destination := bundle.ToDestination(file)
+		perm, err := compactor.GetPermission(file)
+
+		if err != nil {
+			return err
+		}
+
+		err = compactor.WriteFile(destination, content, perm)
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
+	}
+
+	if isDir {
+		return nil
+	}
+
+	perm, err := compactor.GetPermission(files[0])
 
 	if err != nil {
 		return err
 	}
 
-	if options.ShouldCompress(context) {
-		content, err = Minify(content)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	err = compactor.WriteFile(context.Destination, content, perm)
+	err = compactor.WriteFile(target, result, perm)
 
 	if err == nil {
-		context.Processed = true
+		logger.AddWritten(target)
 	}
 
-	return err
+	return nil
 }

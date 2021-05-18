@@ -5,26 +5,35 @@ import (
 )
 
 // GIF processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	err := compactor.CopyFile(context.Source, context.Destination)
+	files := bundle.GetFiles()
 
-	if err != nil {
-		return err
+	for _, file := range files {
+
+		destination := bundle.ToDestination(file)
+		err := compactor.CopyFile(file, destination)
+
+		if err != nil {
+			return err
+		}
+
+		if bundle.ShouldCompress(file) {
+			_, err = compactor.ExecCommand(
+				"gifsicle",
+				"-03",
+				destination,
+				"-o", destination,
+			)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
-	if options.ShouldCompress(context) {
-		_, err = compactor.ExecCommand(
-			"gifsicle",
-			"-03",
-			context.Destination,
-			"-o", context.Destination,
-		)
-	}
-
-	if err == nil {
-		context.Processed = true
-	}
-
-	return err
+	return nil
 }

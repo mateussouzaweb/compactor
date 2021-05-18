@@ -24,13 +24,22 @@ func CreateCopy(source string, destination string, quality int) error {
 }
 
 // WEBP processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	err := compactor.CopyFile(context.Source, context.Destination)
+	files := bundle.GetFiles()
 
-	if err == nil {
-		context.Processed = true
+	for _, file := range files {
+
+		destination := bundle.ToDestination(file)
+		err := compactor.CopyFile(file, destination)
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
-	return err
+	return nil
 }

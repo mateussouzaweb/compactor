@@ -7,72 +7,129 @@ import (
 )
 
 // Typescript processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	context.Destination = strings.Replace(
-		context.Destination, ".tsx", ".js", 1,
-	)
-	context.Destination = strings.Replace(
-		context.Destination, ".ts", ".js", 1,
-	)
+	files := bundle.GetFiles()
+	target, isDir := bundle.GetDestination()
+	multiple := []string{}
 
-	args := []string{
-		context.Source,
-		"--outFile", context.Destination,
-		"--target", "ES6",
-		"--removeComments",
-	}
+	for _, file := range files {
 
-	if options.ShouldGenerateSourceMap(context) {
-		args = append(args, "--sourceMap", "--inlineSources")
-	}
+		// Compile each file individually
+		destination := bundle.ToDestination(file)
+		destination = strings.Replace(destination, ".tsx", ".js", 1)
+		destination = strings.Replace(destination, ".ts", ".js", 1)
 
-	// Compile
-	_, err := compactor.ExecCommand(
-		"tsc",
-		args...,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	// Compress
-	if options.ShouldCompress(context) {
-
-		args = []string{
-			context.Destination,
-			"--output", context.Destination,
-			"--compress",
-			"--comments",
+		args := []string{
+			file,
+			"--outFile", destination,
+			"--target", "ES6",
+			"--removeComments",
 		}
 
-		if options.ShouldGenerateSourceMap(context) {
-
-			file := strings.Replace(
-				context.File, ".ts", ".js", 1,
-			)
-
-			sourceOptions := strings.Join([]string{
-				"includeSources",
-				"filename='" + file + ".map'",
-				"url='" + file + ".map'",
-				"content='" + context.Destination + ".map'",
-			}, ",")
-
-			args = append(args, "--source-map", sourceOptions)
-
+		if bundle.ShouldGenerateSourceMap(file) {
+			args = append(args, "--sourceMap", "--inlineSources")
 		}
 
-		_, err = compactor.ExecCommand(
-			"uglifyjs",
+		// Compile
+		_, err := compactor.ExecCommand(
+			"tsc",
 			args...,
 		)
 
+		if err != nil {
+			return err
+		}
+
+		if !isDir {
+			multiple = append(multiple, destination)
+			continue
+		}
+
+		// Compress
+		if bundle.ShouldCompress(file) {
+
+			args = []string{
+				destination,
+				"--output", destination,
+				"--compress",
+				"--comments",
+			}
+
+			if bundle.ShouldGenerateSourceMap(file) {
+
+				name := bundle.CleanName(destination)
+				sourceOptions := strings.Join([]string{
+					"includeSources",
+					"filename='" + name + ".map'",
+					"url='" + name + ".map'",
+					"content='" + destination + ".map'",
+				}, ",")
+
+				args = append(args, "--source-map", sourceOptions)
+
+			}
+
+			_, err = compactor.ExecCommand(
+				"uglifyjs",
+				args...,
+			)
+
+			if err != nil {
+				return err
+			}
+
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
+	if isDir {
+		return nil
+	}
+
+	destination := target
+	destination = strings.Replace(destination, ".tsx", ".js", 1)
+	destination = strings.Replace(destination, ".ts", ".js", 1)
+
+	args := []string{}
+	args = append(args, multiple...)
+	args = append(args, "--output", destination)
+
+	// Compress
+	if bundle.ShouldCompress(target) {
+		args = append(args, "--compress", "--comments")
+	}
+
+	// SourceMap
+	if bundle.ShouldGenerateSourceMap(target) {
+
+		maps := ""
+		for _, file := range multiple {
+			maps += "," + file + ".map"
+		}
+		maps = strings.TrimLeft(maps, ",")
+
+		name := bundle.CleanName(destination)
+		sourceOptions := strings.Join([]string{
+			"includeSources",
+			"filename='" + name + ".map'",
+			"url='" + name + ".map'",
+			"content='" + maps + "'",
+		}, ",")
+
+		args = append(args, "--source-map", sourceOptions)
+
+	}
+
+	_, err := compactor.ExecCommand(
+		"uglifyjs",
+		args...,
+	)
+
 	if err == nil {
-		context.Processed = true
+		logger.AddProcessed(target)
 	}
 
 	return err

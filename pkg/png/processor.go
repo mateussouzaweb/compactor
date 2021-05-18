@@ -6,33 +6,42 @@ import (
 )
 
 // PNG processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	err := compactor.CopyFile(context.Source, context.Destination)
+	files := bundle.GetFiles()
 
-	if err != nil {
-		return err
-	}
+	for _, file := range files {
 
-	if options.ShouldCompress(context) {
-		_, err = compactor.ExecCommand(
-			"optipng",
-			"--quiet",
-			context.Destination,
-		)
+		destination := bundle.ToDestination(file)
+		err := compactor.CopyFile(file, destination)
 
 		if err != nil {
 			return err
 		}
+
+		if bundle.ShouldCompress(file) {
+			_, err = compactor.ExecCommand(
+				"optipng",
+				"--quiet",
+				destination,
+			)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if bundle.ShouldGenerateProgressive(file) {
+			err = webp.CreateCopy(file, destination, 75)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
-	if options.ShouldGenerateProgressive(context) {
-		err = webp.CreateCopy(context.Source, context.Destination, 75)
-	}
-
-	if err == nil {
-		context.Processed = true
-	}
-
-	return err
+	return nil
 }

@@ -7,22 +7,69 @@ import (
 )
 
 // Javascript processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	args := []string{
-		context.Source,
-		"--output", context.Destination,
+	files := bundle.GetFiles()
+	target, isDir := bundle.GetDestination()
+	multiple := []string{}
+
+	for _, file := range files {
+
+		if !isDir {
+			multiple = append(multiple, file)
+			continue
+		}
+
+		destination := bundle.ToDestination(file)
+
+		args := []string{}
+		args = append(args, file)
+		args = append(args, "--output", destination)
+
+		if bundle.ShouldCompress(file) {
+			args = append(args, "--compress", "--comments")
+		}
+
+		if bundle.ShouldGenerateSourceMap(file) {
+			name := bundle.CleanName(destination)
+			args = append(args, "--source-map", strings.Join([]string{
+				"includeSources",
+				"filename='" + name + ".map'",
+				"url='" + name + ".map'",
+			}, ","))
+		}
+
+		_, err := compactor.ExecCommand(
+			"uglifyjs",
+			args...,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
-	if options.ShouldCompress(context) {
+	if isDir {
+		return nil
+	}
+
+	args := []string{}
+	args = append(args, multiple...)
+	args = append(args, "--output", target)
+
+	if bundle.ShouldCompress(target) {
 		args = append(args, "--compress", "--comments")
 	}
 
-	if options.ShouldGenerateSourceMap(context) {
+	if bundle.ShouldGenerateSourceMap(target) {
+		name := bundle.CleanName(target)
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
-			"filename='" + context.File + ".map'",
-			"url='" + context.File + ".map'",
+			"filename='" + name + ".map'",
+			"url='" + name + ".map'",
 		}, ","))
 	}
 
@@ -32,7 +79,7 @@ func Processor(context *compactor.Context, options *compactor.Options) error {
 	)
 
 	if err == nil {
-		context.Processed = true
+		logger.AddWritten(target)
 	}
 
 	return err

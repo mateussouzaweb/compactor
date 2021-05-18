@@ -7,35 +7,95 @@ import (
 )
 
 // Sass processor
-func Processor(context *compactor.Context, options *compactor.Options) error {
+func Processor(bundle *compactor.Bundle, logger *compactor.Logger) error {
 
-	context.Destination = strings.Replace(
-		context.Destination, ".scss", ".css", 1,
-	)
-	context.Destination = strings.Replace(
-		context.Destination, ".sass", ".css", 1,
-	)
+	files := bundle.GetFiles()
+	target, isDir := bundle.GetDestination()
+	multiple := []string{}
 
-	args := []string{
-		context.Source + ":" + context.Destination,
+	for _, file := range files {
+
+		if !isDir {
+			multiple = append(multiple, file)
+			continue
+		}
+
+		destination := bundle.ToDestination(file)
+		destination = strings.Replace(destination, ".scss", ".css", 1)
+		destination = strings.Replace(destination, ".sass", ".css", 1)
+
+		args := []string{
+			file + ":" + destination,
+		}
+
+		if bundle.ShouldCompress(file) {
+			args = append(args, "--style", "compressed")
+		}
+
+		if bundle.ShouldGenerateSourceMap(file) {
+			args = append(args, "--source-map", "--embed-sources")
+		}
+
+		_, err := compactor.ExecCommand(
+			"sass",
+			args...,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		logger.AddProcessed(file)
+
 	}
 
-	if options.ShouldCompress(context) {
+	if isDir {
+		return nil
+	}
+
+	// TODO: that is wrong
+	content, err := compactor.ReadFiles(multiple)
+
+	if err != nil {
+		return err
+	}
+
+	perm, err := compactor.GetPermission(multiple[0])
+
+	if err != nil {
+		return err
+	}
+
+	err = compactor.WriteFile(target, content, perm)
+
+	if err != nil {
+		return err
+	}
+
+	destination := target
+	destination = strings.Replace(destination, ".scss", ".css", 1)
+	destination = strings.Replace(destination, ".sass", ".css", 1)
+
+	args := []string{
+		target + ":" + destination,
+	}
+
+	if bundle.ShouldCompress(target) {
 		args = append(args, "--style", "compressed")
 	}
 
-	if options.ShouldGenerateSourceMap(context) {
+	if bundle.ShouldGenerateSourceMap(target) {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
-	_, err := compactor.ExecCommand(
+	_, err = compactor.ExecCommand(
 		"sass",
 		args...,
 	)
 
 	if err == nil {
-		context.Processed = true
+		logger.AddProcessed(target)
 	}
 
-	return err
+	return nil
 }
