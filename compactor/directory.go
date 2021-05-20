@@ -3,19 +3,37 @@ package compactor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// ListFiles walks on filepath and return every found file
-func ListFiles(root string) ([]string, error) {
+// WalkFilesCallback type
+type WalkFilesCallback func(path string) error
 
-	var files []string
+// WalkFiles find files in source path and process callback for every result
+func WalkFiles(root string, callback WalkFilesCallback) error {
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return err
+		}
 
 		if info.IsDir() {
 			return nil
 		}
 
+		return callback(path)
+	})
+
+	return err
+}
+
+// ListFiles walks on source path and return every found file
+func ListFiles(root string) ([]string, error) {
+
+	var files []string
+
+	err := WalkFiles(root, func(path string) error {
 		files = append(files, path)
 		return nil
 	})
@@ -23,32 +41,53 @@ func ListFiles(root string) ([]string, error) {
 	return files, err
 }
 
-// FindFiles retrieve files from source path
+// FindFiles retrieve files from source path that exactly match names
 func FindFiles(root string, names []string) ([]string, error) {
 
 	var files []string
 
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-
-		if info.IsDir() {
-			return nil
-		}
+	err := WalkFiles(root, func(path string) error {
 
 		name := filepath.Base(path)
-		match := false
 
 		for _, item := range names {
 			if name == item {
-				match = true
+				files = append(files, path)
 				break
 			}
 		}
 
-		if !match {
-			return nil
-		}
+		return nil
+	})
 
-		files = append(files, path)
+	return files, err
+}
+
+// FindFilesMatch retrieve files from source path that match patterns
+func FindFilesMatch(root string, patterns []string) ([]string, error) {
+
+	var files []string
+
+	err := WalkFiles(root, func(path string) error {
+
+		for _, pattern := range patterns {
+
+			file := strings.Replace(path, root, "", 1)
+			file = strings.TrimLeft(file, "/")
+			file = strings.TrimLeft(file, "\\")
+
+			matched, err := filepath.Match(pattern, file)
+
+			if err != nil {
+				return err
+			}
+
+			if matched {
+				files = append(files, path)
+				break
+			}
+
+		}
 
 		return nil
 	})

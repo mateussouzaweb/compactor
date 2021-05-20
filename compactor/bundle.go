@@ -207,7 +207,7 @@ func (b *Bundle) ContainsFile(file string) bool {
 			return true
 		}
 
-		match, err := filepath.Match(file, existing)
+		match, err := filepath.Match(existing, file)
 
 		if err != nil {
 			continue
@@ -225,6 +225,7 @@ func (b *Bundle) ContainsFile(file string) bool {
 func (b *Bundle) GetFiles() []string {
 
 	files := []string{}
+	patterns := []string{}
 
 	for _, file := range b.Source.Files {
 
@@ -236,9 +237,14 @@ func (b *Bundle) GetFiles() []string {
 
 		if ExistFile(path) {
 			files = append(files, path)
+		} else {
+			patterns = append(patterns, file)
 		}
 
 	}
+
+	foundInPattern, _ := FindFilesMatch(b.Source.Path, patterns)
+	files = append(files, foundInPattern...)
 
 	return files
 }
