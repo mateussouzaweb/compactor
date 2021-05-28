@@ -33,6 +33,8 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		if bundle.ShouldCompress(file) {
 			args = append(args, "--compress", "--comments")
+		} else {
+			args = append(args, "--beautify")
 		}
 
 		if bundle.ShouldGenerateSourceMap(file) {
@@ -67,6 +69,8 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 	if bundle.ShouldCompress(target) {
 		args = append(args, "--compress", "--comments")
+	} else {
+		args = append(args, "--beautify")
 	}
 
 	if bundle.ShouldGenerateSourceMap(target) {
