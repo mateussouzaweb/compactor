@@ -105,6 +105,8 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	// Compress
 	if bundle.ShouldCompress(target) {
 		args = append(args, "--compress", "--comments")
+	} else {
+		args = append(args, "--beautify")
 	}
 
 	// SourceMap
