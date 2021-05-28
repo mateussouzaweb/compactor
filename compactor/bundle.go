@@ -1,6 +1,7 @@
 package compactor
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -79,7 +80,7 @@ func (b *Bundle) MatchPatterns(file string, patterns []string) bool {
 
 	for _, pattern := range patterns {
 
-		result, err := filepath.Match(pattern, file)
+		result, err := path.Match(pattern, file)
 
 		if err != nil {
 			continue
@@ -207,7 +208,7 @@ func (b *Bundle) ContainsFile(file string) bool {
 			return true
 		}
 
-		match, err := filepath.Match(existing, file)
+		match, err := path.Match(existing, file)
 
 		if err != nil {
 			continue

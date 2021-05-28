@@ -2,6 +2,7 @@ package compactor
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -68,22 +69,22 @@ func FindFilesMatch(root string, patterns []string) ([]string, error) {
 
 	var files []string
 
-	err := WalkFiles(root, func(path string) error {
+	err := WalkFiles(root, func(thePath string) error {
 
 		for _, pattern := range patterns {
 
-			file := strings.Replace(path, root, "", 1)
+			file := strings.Replace(thePath, root, "", 1)
 			file = strings.TrimLeft(file, "/")
 			file = strings.TrimLeft(file, "\\")
 
-			matched, err := filepath.Match(pattern, file)
+			matched, err := path.Match(pattern, file)
 
 			if err != nil {
 				return err
 			}
 
 			if matched {
-				files = append(files, path)
+				files = append(files, thePath)
 				break
 			}
 
