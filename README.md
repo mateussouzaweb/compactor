@@ -40,12 +40,13 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 For now, you first need to install dependencies:
 
 ```bash
-apt-get install -y jpegoptim libjpeg-progs optipng gifsicle webp nodejs
+sudo su
+apt install -y jpegoptim libjpeg-progs optipng gifsicle webp nodejs npm
 
 npm install -g html-minifier
 npm install -g sass
 npm install -g typescript
-npm install -g uglifyjs
+npm install -g uglify-js
 npm install -g svgo
 ```
 
