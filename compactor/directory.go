@@ -75,7 +75,6 @@ func FindFilesMatch(root string, patterns []string) ([]string, error) {
 
 			file := strings.Replace(thePath, root, "", 1)
 			file = strings.TrimLeft(file, "/")
-			file = strings.TrimLeft(file, "\\")
 
 			matched, err := path.Match(pattern, file)
 

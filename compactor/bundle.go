@@ -68,7 +68,6 @@ func (b *Bundle) CleanPath(file string) string {
 	file = strings.Replace(file, b.Source.Path, "", 1)
 	file = strings.Replace(file, b.Destination.Path, "", 1)
 	file = strings.TrimLeft(file, "/")
-	file = strings.TrimLeft(file, "\\")
 
 	return file
 }
