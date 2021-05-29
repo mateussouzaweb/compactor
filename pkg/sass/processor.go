@@ -13,15 +13,8 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	files := bundle.GetFiles()
-	target := bundle.GetDestination()
-	multiple := []string{}
 
 	for _, file := range files {
-
-		if !bundle.IsToMultipleDestinations() {
-			multiple = append(multiple, file)
-			continue
-		}
 
 		destination := bundle.ToDestination(file)
 		destination = bundle.ToExtension(destination, "css")
@@ -49,47 +42,6 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		logger.AddProcessed(file)
 
-	}
-
-	if bundle.IsToMultipleDestinations() {
-		return nil
-	}
-
-	// TODO: that is wrong
-	content, perm, err := compactor.ReadFilesAndPermission(multiple)
-
-	if err != nil {
-		return err
-	}
-
-	err = compactor.WriteFile(target, content, perm)
-
-	if err != nil {
-		return err
-	}
-
-	destination := target
-	destination = bundle.ToExtension(destination, "js")
-
-	args := []string{
-		target + ":" + destination,
-	}
-
-	if bundle.ShouldCompress(target) {
-		args = append(args, "--style", "compressed")
-	}
-
-	if bundle.ShouldGenerateSourceMap(target) {
-		args = append(args, "--source-map", "--embed-sources")
-	}
-
-	_, err = compactor.ExecCommand(
-		"sass",
-		args...,
-	)
-
-	if err == nil {
-		logger.AddProcessed(target)
 	}
 
 	return nil

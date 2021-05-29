@@ -58,12 +58,10 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	files := bundle.GetFiles()
-	target := bundle.GetDestination()
-	result := ""
 
-	for _, file := range files {
+	if bundle.IsToMultipleDestinations() {
 
-		if bundle.IsToMultipleDestinations() {
+		for _, file := range files {
 
 			destination := bundle.ToDestination(file)
 			err := compactor.CopyFile(file, destination)
@@ -73,34 +71,23 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			}
 
 			logger.AddProcessed(file)
-			continue
 
 		}
 
-		content, err := compactor.ReadFile(file)
-
-		if err != nil {
-			return err
-		}
-
-		result += content
-
-	}
-
-	if bundle.IsToMultipleDestinations() {
 		return nil
 	}
 
-	perm, err := compactor.GetPermission(files[0])
+	content, perm, err := compactor.ReadFilesAndPermission(files)
 
 	if err != nil {
 		return err
 	}
 
-	err = compactor.WriteFile(target, result, perm)
+	destination := bundle.GetDestination()
+	err = compactor.WriteFile(destination, content, perm)
 
 	if err == nil {
-		logger.AddWritten(target)
+		logger.AddWritten(destination)
 	}
 
 	return err

@@ -15,12 +15,9 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	files := bundle.GetFiles()
-	target := bundle.GetDestination()
-	multiple := []string{}
 
 	for _, file := range files {
 
-		// Compile each file individually
 		destination := bundle.ToDestination(file)
 		destination = bundle.ToExtension(destination, "js")
 
@@ -43,11 +40,6 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		if err != nil {
 			return err
-		}
-
-		if !bundle.IsToMultipleDestinations() {
-			multiple = append(multiple, destination)
-			continue
 		}
 
 		// Compress
@@ -89,53 +81,5 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 	}
 
-	if bundle.IsToMultipleDestinations() {
-		return nil
-	}
-
-	destination := target
-	destination = bundle.ToExtension(target, "js")
-
-	args := []string{}
-	args = append(args, multiple...)
-	args = append(args, "--output", destination)
-
-	// Compress
-	if bundle.ShouldCompress(target) {
-		args = append(args, "--compress", "--comments")
-	} else {
-		args = append(args, "--beautify")
-	}
-
-	// SourceMap
-	if bundle.ShouldGenerateSourceMap(target) {
-
-		maps := ""
-		for _, file := range multiple {
-			maps += "," + file + ".map"
-		}
-		maps = strings.TrimLeft(maps, ",")
-
-		name := bundle.CleanName(destination)
-		sourceOptions := strings.Join([]string{
-			"includeSources",
-			"filename='" + name + ".map'",
-			"url='" + name + ".map'",
-			"content='" + maps + "'",
-		}, ",")
-
-		args = append(args, "--source-map", sourceOptions)
-
-	}
-
-	_, err := compactor.ExecCommand(
-		"uglifyjs",
-		args...,
-	)
-
-	if err == nil {
-		logger.AddProcessed(target)
-	}
-
-	return err
+	return nil
 }

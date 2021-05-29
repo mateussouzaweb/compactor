@@ -27,60 +27,56 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	files := bundle.GetFiles()
-	target := bundle.GetDestination()
-	result := ""
 
-	for _, file := range files {
+	if bundle.IsToMultipleDestinations() {
 
-		content, err := compactor.ReadFile(file)
+		for _, file := range files {
 
-		if err != nil {
-			return err
-		}
+			content, perm, err := compactor.ReadFileAndPermission(file)
 
-		if bundle.ShouldCompress(file) {
-			content, err = Minify(content)
 			if err != nil {
 				return err
 			}
+
+			if bundle.ShouldCompress(file) {
+				content, err = Minify(content)
+				if err != nil {
+					return err
+				}
+			}
+
+			destination := bundle.ToDestination(file)
+			err = compactor.WriteFile(destination, content, perm)
+
+			if err != nil {
+				return err
+			}
+
+			logger.AddProcessed(file)
+
 		}
 
-		if !bundle.IsToMultipleDestinations() {
-			result += content
-			continue
-		}
-
-		destination := bundle.ToDestination(file)
-		perm, err := compactor.GetPermission(file)
-
-		if err != nil {
-			return err
-		}
-
-		err = compactor.WriteFile(destination, content, perm)
-
-		if err != nil {
-			return err
-		}
-
-		logger.AddProcessed(file)
-
-	}
-
-	if bundle.IsToMultipleDestinations() {
 		return nil
 	}
 
-	perm, err := compactor.GetPermission(files[0])
+	destination := bundle.GetDestination()
+	content, perm, err := compactor.ReadFilesAndPermission(files)
 
 	if err != nil {
 		return err
 	}
 
-	err = compactor.WriteFile(target, result, perm)
+	if bundle.ShouldCompress(destination) {
+		content, err = Minify(content)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = compactor.WriteFile(destination, content, perm)
 
 	if err == nil {
-		logger.AddWritten(target)
+		logger.AddWritten(destination)
 	}
 
 	return err
