@@ -22,8 +22,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		// Compile each file individually
 		destination := bundle.ToDestination(file)
-		destination = strings.Replace(destination, ".tsx", ".js", 1)
-		destination = strings.Replace(destination, ".ts", ".js", 1)
+		destination = bundle.ToExtension(destination, "js")
 
 		args := []string{
 			file,
@@ -95,8 +94,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	destination := target
-	destination = strings.Replace(destination, ".tsx", ".js", 1)
-	destination = strings.Replace(destination, ".ts", ".js", 1)
+	destination = bundle.ToExtension(target, "js")
 
 	args := []string{}
 	args = append(args, multiple...)

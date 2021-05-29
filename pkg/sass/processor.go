@@ -1,8 +1,6 @@
 package sass
 
 import (
-	"strings"
-
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
@@ -26,8 +24,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		}
 
 		destination := bundle.ToDestination(file)
-		destination = strings.Replace(destination, ".scss", ".css", 1)
-		destination = strings.Replace(destination, ".sass", ".css", 1)
+		destination = bundle.ToExtension(destination, "css")
 
 		args := []string{
 			file + ":" + destination,
@@ -78,8 +75,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	destination := target
-	destination = strings.Replace(destination, ".scss", ".css", 1)
-	destination = strings.Replace(destination, ".sass", ".css", 1)
+	destination = bundle.ToExtension(destination, "js")
 
 	args := []string{
 		target + ":" + destination,

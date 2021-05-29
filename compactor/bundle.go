@@ -263,3 +263,13 @@ func (b *Bundle) GetDestination() string {
 func (b *Bundle) ToDestination(file string) string {
 	return filepath.Join(b.Destination.Path, b.CleanPath(file))
 }
+
+// Return a file converted to a specific extension
+func (b *Bundle) ToExtension(file string, extension string) string {
+
+	previousExtension := b.CleanExtension(file)
+	file = strings.TrimRight(file, "."+previousExtension)
+	file = file + "." + extension
+
+	return file
+}
