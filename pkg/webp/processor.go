@@ -10,10 +10,6 @@ import (
 // CreateCopy make a WEBP copy of a image file from almost any format
 func CreateCopy(source string, destination string, quality int) error {
 
-	if compactor.ExistFile(source + ".webp") {
-		return nil
-	}
-
 	_, err := compactor.ExecCommand(
 		"cwebp",
 		"-q", fmt.Sprintf("%d", quality),
