@@ -16,7 +16,14 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 	for _, file := range files {
 
+		hash, err := compactor.GetChecksum([]string{file})
+
+		if err != nil {
+			return err
+		}
+
 		destination := bundle.ToDestination(file)
+		destination = bundle.ToHashed(destination, hash)
 		destination = bundle.ToExtension(destination, "css")
 
 		args := []string{
@@ -31,7 +38,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			args = append(args, "--source-map", "--embed-sources")
 		}
 
-		_, err := compactor.ExecCommand(
+		_, err = compactor.ExecCommand(
 			"sass",
 			args...,
 		)

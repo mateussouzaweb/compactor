@@ -8,12 +8,30 @@ func DeleteProcessor(bundle *compactor.Bundle, logger *compactor.Logger, extraFo
 
 	if bundle.IsToMultipleDestinations() {
 		for _, file := range bundle.GetFiles() {
+
+			hash, err := compactor.GetChecksum([]string{file})
+
+			if err != nil {
+				return err
+			}
+
 			destination := bundle.ToDestination(file)
-			toDelete = append(toDelete, destination)
+			hashed := bundle.ToHashed(destination, hash)
+			toDelete = append(toDelete, destination, hashed)
+
 		}
 	} else {
+
+		hash, err := compactor.GetChecksum(bundle.GetFiles())
+
+		if err != nil {
+			return err
+		}
+
 		destination := bundle.GetDestination()
-		toDelete = append(toDelete, destination)
+		hashed := bundle.ToHashed(destination, hash)
+		toDelete = append(toDelete, destination, hashed)
+
 	}
 
 	for _, file := range toDelete {

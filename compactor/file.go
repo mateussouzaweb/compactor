@@ -2,6 +2,9 @@ package compactor
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -146,4 +149,22 @@ func ChmodFile(file string, perm fs.FileMode) error {
 // ChmodFile apply permission to file
 func ChownFile(file string, user int, group int) error {
 	return os.Chown(file, user, group)
+}
+
+// GetChecksum retrive the checksum for files
+func GetChecksum(files []string) (string, error) {
+
+	content, err := ReadFiles(files)
+
+	if err != nil {
+		return "", err
+	}
+
+	sum := md5.New()
+	_, err = io.WriteString(sum, content)
+
+	inBytes := sum.Sum(nil)[:8]
+	hash := hex.EncodeToString(inBytes)
+
+	return hash, err
 }

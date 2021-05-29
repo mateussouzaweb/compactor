@@ -273,3 +273,17 @@ func (b *Bundle) ToExtension(file string, extension string) string {
 
 	return file
 }
+
+// Return a file converted to a hashed name to avoid caching
+func (b *Bundle) ToHashed(file string, hash string) string {
+
+	if hash == "" {
+		return file
+	}
+
+	extension := b.CleanExtension(file)
+	file = strings.TrimRight(file, "."+extension)
+	file = strings.Join([]string{file, hash, extension}, ".")
+
+	return file
+}

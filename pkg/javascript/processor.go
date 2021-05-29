@@ -20,7 +20,14 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		for _, file := range files {
 
+			hash, err := compactor.GetChecksum([]string{file})
+
+			if err != nil {
+				return err
+			}
+
 			destination := bundle.ToDestination(file)
+			destination = bundle.ToHashed(destination, hash)
 
 			args := []string{}
 			args = append(args, file)
@@ -41,7 +48,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 				}, ","))
 			}
 
-			_, err := compactor.ExecCommand(
+			_, err = compactor.ExecCommand(
 				"uglifyjs",
 				args...,
 			)
@@ -57,7 +64,14 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		return nil
 	}
 
+	hash, err := compactor.GetChecksum(files)
+
+	if err != nil {
+		return err
+	}
+
 	destination := bundle.GetDestination()
+	destination = bundle.ToHashed(destination, hash)
 
 	args := []string{}
 	args = append(args, files...)
@@ -78,7 +92,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		}, ","))
 	}
 
-	_, err := compactor.ExecCommand(
+	_, err = compactor.ExecCommand(
 		"uglifyjs",
 		args...,
 	)
