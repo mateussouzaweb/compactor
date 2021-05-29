@@ -256,7 +256,7 @@ func (b *Bundle) IsToMultipleDestinations() bool {
 
 // Return the final destination file path
 func (b *Bundle) GetDestination() string {
-	return filepath.Join(b.Destination.Path, b.Destination.File)
+	return b.ToDestination(b.Destination.File)
 }
 
 // Transform and return the full destination path for file
