@@ -10,7 +10,7 @@ import (
 func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
 
 	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{"webp"})
+		return generic.DeleteProcessor(bundle, logger, []string{"jpeg.webp", "jpg.webp"})
 	}
 
 	files := bundle.GetFiles()
