@@ -208,18 +208,26 @@ func main() {
 		"source",
 		"Path of project source files [DEFAULT: /src]",
 		func(path string) error {
-			source, _ = filepath.Abs(path)
-			options.Source.Path = source
-			return nil
+
+			source, err := filepath.Abs(path)
+			if err != nil {
+				options.Source.Path = source
+			}
+
+			return err
 		})
 
 	flag.Func(
 		"destination",
 		"Path to the destination folder [DEFAULT: /dist]",
 		func(path string) error {
-			destination, _ = filepath.Abs(path)
-			options.Destination.Path = destination
-			return nil
+
+			destination, err := filepath.Abs(path)
+			if err != nil {
+				options.Destination.Path = destination
+			}
+
+			return err
 		})
 
 	flag.Func(
