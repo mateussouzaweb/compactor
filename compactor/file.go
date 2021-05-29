@@ -78,6 +78,20 @@ func ReadFiles(files []string) (string, error) {
 	return buf.String(), nil
 }
 
+// ReadFilesAndPermission retrieve files content from file list and the permision of the first file
+func ReadFilesAndPermission(files []string) (string, fs.FileMode, error) {
+
+	perm, err := GetPermission(files[0])
+
+	if err != nil {
+		return "", perm, err
+	}
+
+	content, err := ReadFiles(files)
+
+	return content, perm, err
+}
+
 // WriteFile write content on file
 func WriteFile(file string, content string, perm fs.FileMode) error {
 

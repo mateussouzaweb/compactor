@@ -56,13 +56,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	// TODO: that is wrong
-	content, err := compactor.ReadFiles(multiple)
-
-	if err != nil {
-		return err
-	}
-
-	perm, err := compactor.GetPermission(multiple[0])
+	content, perm, err := compactor.ReadFilesAndPermission(multiple)
 
 	if err != nil {
 		return err
