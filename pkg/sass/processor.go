@@ -9,7 +9,7 @@ import (
 func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
 
 	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{".map"})
+		return generic.DeleteProcessor(bundle, logger, []string{"css.map"})
 	}
 
 	files := bundle.GetFiles()

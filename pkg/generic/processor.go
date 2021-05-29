@@ -34,11 +34,13 @@ func DeleteProcessor(bundle *compactor.Bundle, logger *compactor.Logger, extraFo
 	for _, file := range toDelete {
 		for _, format := range extraFormats {
 
-			if !compactor.ExistFile(file + format) {
+			extra := bundle.ToExtension(file, format)
+
+			if !compactor.ExistFile(extra) {
 				continue
 			}
 
-			err := compactor.DeleteFile(file + format)
+			err := compactor.DeleteFile(extra)
 			if err != nil {
 				return err
 			}
