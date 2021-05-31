@@ -414,7 +414,7 @@ func main() {
 	for target, files := range bundles {
 
 		bundle := compactor.NewBundle()
-		bundle.Extension = bundle.CleanExtension(files[0])
+		bundle.Extension = compactor.CleanExtension(files[0])
 		bundle.Destination.File = bundle.CleanPath(target)
 
 		for _, file := range files {

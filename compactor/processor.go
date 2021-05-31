@@ -75,7 +75,7 @@ func RetrieveBundleFor(file string) *Bundle {
 	}
 
 	bundle := NewBundle()
-	bundle.Extension = bundle.CleanExtension(file)
+	bundle.Extension = CleanExtension(file)
 	bundle.Destination.File = bundle.CleanPath(file)
 	bundle.AddFile(file)
 

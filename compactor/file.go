@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // GetPermission retrieve file permission from file
@@ -167,4 +169,14 @@ func GetChecksum(files []string) (string, error) {
 	hash := hex.EncodeToString(inBytes)
 
 	return hash, err
+}
+
+// Return the clean file name, with extension
+func CleanName(file string) string {
+	return filepath.Base(file)
+}
+
+// Return the clean file extension, without dot
+func CleanExtension(file string) string {
+	return strings.TrimLeft(filepath.Ext(file), ".")
 }

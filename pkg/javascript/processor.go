@@ -40,7 +40,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			}
 
 			if bundle.ShouldGenerateSourceMap(file) {
-				name := bundle.CleanName(destination)
+				name := compactor.CleanName(destination)
 				args = append(args, "--source-map", strings.Join([]string{
 					"includeSources",
 					"filename='" + name + ".map'",
@@ -84,7 +84,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	if bundle.ShouldGenerateSourceMap(destination) {
-		name := bundle.CleanName(destination)
+		name := compactor.CleanName(destination)
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
 			"filename='" + name + ".map'",
@@ -102,4 +102,47 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 	}
 
 	return err
+}
+
+// CorrectPath fix the path for given src
+func CorrectPath(src string) (string, error) {
+
+	bundle := compactor.RetrieveBundleFor(src)
+
+	if bundle.IsToMultipleDestinations() {
+
+		source := bundle.ToSource(src)
+		hash, err := compactor.GetChecksum([]string{source})
+
+		if err != nil {
+			return "", err
+		}
+
+		destination := bundle.ToDestination(src)
+		destination = bundle.ToHashed(destination, hash)
+		destination = bundle.CleanPath(destination)
+
+		if src[0] == '/' {
+			destination = "/" + destination
+		}
+
+		return destination, nil
+	}
+
+	files := bundle.GetFiles()
+	hash, err := compactor.GetChecksum(files)
+
+	if err != nil {
+		return "", err
+	}
+
+	destination := bundle.GetDestination()
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.CleanPath(destination)
+
+	if src[0] == '/' {
+		destination = "/" + destination
+	}
+
+	return destination, nil
 }

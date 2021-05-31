@@ -3,10 +3,15 @@ package html
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/pkg/css"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
+	"github.com/mateussouzaweb/compactor/pkg/javascript"
+	"github.com/mateussouzaweb/compactor/pkg/sass"
+	"github.com/mateussouzaweb/compactor/pkg/typescript"
 )
 
 // HTML minify
@@ -51,15 +56,101 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
-// HTML ReplaceFormats method
-func ReplaceFormats(content string) string {
+// ExtractAttribute find the value of the attribute
+func ExtractAttribute(html string, attribute string, defaultValue string) string {
 
-	content = strings.ReplaceAll(content, ".scss", ".css")
-	content = strings.ReplaceAll(content, ".sass", ".css")
-	content = strings.ReplaceAll(content, ".ts", ".js")
-	content = strings.ReplaceAll(content, ".tsx", ".js")
+	regex := regexp.MustCompile(attribute + `=[\"\']([^"']*)[\"\']`)
+	match := regex.FindStringSubmatch(html)
+	value := ""
 
-	return content
+	if match != nil {
+		value = match[1]
+	}
+
+	if value == "" {
+		value = defaultValue
+	}
+
+	return value
+}
+
+// HTML Format method
+func Format(content string) (string, error) {
+
+	var err error
+	var file string
+
+	script := `(?i)<script(.+)?>(.+)?</script>`
+	regex := regexp.MustCompile(script)
+	matches := regex.FindAllStringSubmatch(content, -1)
+
+	for _, match := range matches {
+
+		code := match[0]
+		src := ExtractAttribute(code, "src", "")
+
+		// Ignore protocol scripts, only handle relative and absolute paths
+		if strings.Contains(src, "://") {
+			continue
+		}
+
+		file = src
+		extension := compactor.CleanExtension(src)
+
+		if extension == "js" {
+			file, err = javascript.CorrectPath(src)
+		} else {
+			file, err = typescript.CorrectPath(src)
+		}
+
+		if err != nil {
+			return content, err
+		}
+
+		content = strings.Replace(content, src, file, 1)
+
+	}
+
+	link := `(?i)<link(.+)?\/?>`
+	regex = regexp.MustCompile(link)
+	matches = regex.FindAllStringSubmatch(content, -1)
+
+	for _, match := range matches {
+
+		code := match[0]
+		rel := ExtractAttribute(code, "rel", "")
+		href := ExtractAttribute(code, "href", "")
+		as := ExtractAttribute(code, "as", "")
+
+		if rel == "" || href == "" {
+			continue
+		}
+		if rel != "stylesheet" && (rel == "preload" && as == "") {
+			continue
+		}
+
+		file = href
+		extension := compactor.CleanExtension(href)
+
+		if extension == "css" {
+			file, err = css.CorrectPath(href)
+		} else if extension == "sass" || extension == "scss" {
+			file, err = sass.CorrectPath(href)
+		} else if extension == "js" {
+			file, err = javascript.CorrectPath(href)
+		} else if extension == "ts" {
+			file, err = typescript.CorrectPath(href)
+		}
+
+		if err != nil {
+			return content, err
+		}
+
+		content = strings.Replace(content, href, file, 1)
+
+	}
+
+	return content, nil
 }
 
 // HTML processor
@@ -81,7 +172,11 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 				return err
 			}
 
-			content = ReplaceFormats(content)
+			content, err = Format(content)
+
+			if err != nil {
+				return err
+			}
 
 			if bundle.ShouldCompress(file) {
 				content, err = Minify(content)
@@ -110,7 +205,12 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		return err
 	}
 
-	content = ReplaceFormats(content)
+	content, err = Format(content)
+
+	if err != nil {
+		return err
+	}
+
 	destination := bundle.GetDestination()
 
 	if bundle.ShouldCompress(destination) {

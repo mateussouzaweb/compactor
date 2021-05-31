@@ -52,16 +52,6 @@ type Bundle struct {
 	Progressive Progressive
 }
 
-// Return the clean file name, with extension
-func (b *Bundle) CleanName(file string) string {
-	return filepath.Base(file)
-}
-
-// Return the clean file extension, without dot
-func (b *Bundle) CleanExtension(file string) string {
-	return strings.TrimLeft(filepath.Ext(file), ".")
-}
-
 // Return the clean file, without source and destination path
 func (b *Bundle) CleanPath(file string) string {
 
@@ -201,6 +191,10 @@ func (b *Bundle) ContainsFile(file string) bool {
 
 	file = b.CleanPath(file)
 
+	if file == b.Destination.File {
+		return true
+	}
+
 	for _, existing := range b.Source.Files {
 
 		if existing == file {
@@ -259,6 +253,11 @@ func (b *Bundle) GetDestination() string {
 	return b.ToDestination(b.Destination.File)
 }
 
+// Transform and return the full source path for file
+func (b *Bundle) ToSource(file string) string {
+	return filepath.Join(b.Source.Path, b.CleanPath(file))
+}
+
 // Transform and return the full destination path for file
 func (b *Bundle) ToDestination(file string) string {
 	return filepath.Join(b.Destination.Path, b.CleanPath(file))
@@ -267,7 +266,7 @@ func (b *Bundle) ToDestination(file string) string {
 // Return a file converted to a specific extension
 func (b *Bundle) ToExtension(file string, extension string) string {
 
-	previousExtension := b.CleanExtension(file)
+	previousExtension := CleanExtension(file)
 	file = strings.TrimRight(file, "."+previousExtension)
 	file = file + "." + extension
 
@@ -281,7 +280,7 @@ func (b *Bundle) ToHashed(file string, hash string) string {
 		return file
 	}
 
-	extension := b.CleanExtension(file)
+	extension := CleanExtension(file)
 	file = strings.TrimRight(file, "."+extension)
 	file = strings.Join([]string{file, hash, extension}, ".")
 
