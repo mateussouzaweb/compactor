@@ -2,29 +2,28 @@ package gif
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // GIF processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{})
-	}
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
+		if !item.Exists {
+			continue
+		}
 
-	for _, file := range files {
-
-		destination := bundle.ToDestination(file)
-		err := compactor.CopyFile(file, destination)
+		destination := bundle.ToDestination(item.Path)
+		err := os.Copy(item.Path, destination)
 
 		if err != nil {
 			return err
 		}
 
-		if bundle.ShouldCompress(file) {
-			_, err = compactor.ExecCommand(
+		if bundle.ShouldCompress(item.Path) {
+			_, err = os.Exec(
 				"gifsicle",
 				"-03",
 				destination,
@@ -36,9 +35,18 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".gif"},
+		Run:        RunProcessor,
+		Delete:     generic.DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }

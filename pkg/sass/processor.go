@@ -2,43 +2,37 @@ package sass
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
-	"github.com/mateussouzaweb/compactor/pkg/generic"
+	"github.com/mateussouzaweb/compactor/os"
+	"github.com/mateussouzaweb/compactor/pkg/css"
 )
 
 // Sass processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{"css.map"})
-	}
+	// TODO: to multiple, simulate a sass file with @imports
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
-
-	for _, file := range files {
-
-		hash, err := compactor.GetChecksum([]string{file})
-
-		if err != nil {
-			return err
+		if !item.Exists {
+			continue
 		}
 
-		destination := bundle.ToDestination(file)
-		destination = bundle.ToHashed(destination, hash)
-		destination = bundle.ToExtension(destination, "css")
+		destination := bundle.ToDestination(item.Path)
+		destination = bundle.ToHashed(destination, item.Checksum)
+		destination = bundle.ToExtension(destination, ".css")
 
 		args := []string{
-			file + ":" + destination,
+			item.Path + ":" + destination,
 		}
 
-		if bundle.ShouldCompress(file) {
+		if bundle.ShouldCompress(item.Path) {
 			args = append(args, "--style", "compressed")
 		}
 
-		if bundle.ShouldGenerateSourceMap(file) {
+		if bundle.ShouldGenerateSourceMap(item.Path) {
 			args = append(args, "--source-map", "--embed-sources")
 		}
 
-		_, err = compactor.ExecCommand(
+		_, err := os.Exec(
 			"sass",
 			args...,
 		)
@@ -47,55 +41,18 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
 }
 
-
-// CorrectPath fix the path for given src
-func CorrectPath(src string) (string, error) {
-
-	bundle := compactor.RetrieveBundleFor(src)
-
-	if bundle.IsToMultipleDestinations() {
-
-		source := bundle.ToSource(src)
-		hash, err := compactor.GetChecksum([]string{source})
-
-		if err != nil {
-			return "", err
-		}
-
-		destination := bundle.ToDestination(src)
-		destination = bundle.ToHashed(destination, hash)
-		destination = bundle.ToExtension(destination, "css")
-		destination = bundle.CleanPath(destination)
-
-		if src[0] == '/' {
-			destination = "/" + destination
-		}
-
-		return destination, nil
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".sass", ".scss"},
+		Run:        RunProcessor,
+		Delete:     css.DeleteProcessor,
+		Resolve:    css.ResolveProcessor,
 	}
-
-	files := bundle.GetFiles()
-	hash, err := compactor.GetChecksum(files)
-
-	if err != nil {
-		return "", err
-	}
-
-	destination := bundle.GetDestination()
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, "css")
-	destination = bundle.CleanPath(destination)
-
-	if src[0] == '/' {
-		destination = "/" + destination
-	}
-
-	return destination, nil
 }

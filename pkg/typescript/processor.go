@@ -4,43 +4,38 @@ import (
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
+	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
 
 // Typescript processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{"js.map"})
-	}
+	// TODO: to multiple, simulate a typescript file with requires/imports
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
-
-	for _, file := range files {
-
-		hash, err := compactor.GetChecksum([]string{file})
-
-		if err != nil {
-			return err
+		if !item.Exists {
+			continue
 		}
 
-		destination := bundle.ToDestination(file)
-		destination = bundle.ToHashed(destination, hash)
-		destination = bundle.ToExtension(destination, "js")
+		destination := bundle.ToDestination(item.Path)
+		destination = bundle.ToHashed(destination, item.Checksum)
+		destination = bundle.ToExtension(destination, ".js")
 
 		args := []string{
-			file,
+			item.Path,
 			"--outFile", destination,
 			"--target", "ES6",
 			"--removeComments",
 		}
 
-		if bundle.ShouldGenerateSourceMap(file) {
+		if bundle.ShouldGenerateSourceMap(item.Path) {
 			args = append(args, "--sourceMap", "--inlineSources")
 		}
 
 		// Compile
-		_, err = compactor.ExecCommand(
+		_, err := os.Exec(
 			"tsc",
 			args...,
 		)
@@ -50,7 +45,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		}
 
 		// Compress
-		if bundle.ShouldCompress(file) {
+		if bundle.ShouldCompress(item.Path) {
 
 			args = []string{
 				destination,
@@ -59,13 +54,13 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 				"--comments",
 			}
 
-			if bundle.ShouldGenerateSourceMap(file) {
+			if bundle.ShouldGenerateSourceMap(item.Path) {
 
-				name := compactor.CleanName(destination)
+				file := os.File(destination)
 				sourceOptions := strings.Join([]string{
 					"includeSources",
-					"filename='" + name + ".map'",
-					"url='" + name + ".map'",
+					"filename='" + file + ".map'",
+					"url='" + file + ".map'",
 					"content='" + destination + ".map'",
 				}, ",")
 
@@ -73,7 +68,7 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 			}
 
-			_, err = compactor.ExecCommand(
+			_, err = os.Exec(
 				"uglifyjs",
 				args...,
 			)
@@ -84,54 +79,45 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
 }
 
-// CorrectPath fix the path for given src
-func CorrectPath(src string) (string, error) {
+// DeleteProcessor
+func DeleteProcessor(bundle *compactor.Bundle) error {
 
-	bundle := compactor.RetrieveBundleFor(src)
-
-	if bundle.IsToMultipleDestinations() {
-
-		source := bundle.ToSource(src)
-		hash, err := compactor.GetChecksum([]string{source})
-
-		if err != nil {
-			return "", err
-		}
-
-		destination := bundle.ToDestination(src)
-		destination = bundle.ToHashed(destination, hash)
-		destination = bundle.ToExtension(destination, "js")
-		destination = bundle.CleanPath(destination)
-
-		if src[0] == '/' {
-			destination = "/" + destination
-		}
-
-		return destination, nil
-	}
-
-	files := bundle.GetFiles()
-	hash, err := compactor.GetChecksum(files)
+	err := generic.DeleteProcessor(bundle)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	destination := bundle.GetDestination()
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, "js")
-	destination = bundle.CleanPath(destination)
+	for _, deleted := range bundle.Logs.Deleted {
 
-	if src[0] == '/' {
-		destination = "/" + destination
+		extra := bundle.ToExtension(deleted, ".js.map")
+
+		if !os.Exist(extra) {
+			continue
+		}
+
+		err := os.Delete(extra)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	return destination, nil
+	return err
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".ts", ".tsx"},
+		Run:        RunProcessor,
+		Delete:     javascript.DeleteProcessor,
+		Resolve:    javascript.ResolveProcessor,
+	}
 }

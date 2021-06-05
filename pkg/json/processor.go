@@ -2,6 +2,7 @@ package json
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/json"
@@ -18,40 +19,55 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
+// Json Merge
+// func Merge(files []string) (string, error) {
+
+// 	var defaultJSONDecoded map[string]interface{}
+
+// 	defaultJSONUnmarshalErr := json.Unmarshal([]byte(defaultJSON), &defaultJSONDecoded)
+
+// 	return content, err
+// }
+
 // Json processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{})
-	}
+	// TODO: to multiple, merge json as array and join data
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
-
-	for _, file := range files {
-
-		content, perm, err := compactor.ReadFileAndPermission(file)
-
-		if err != nil {
-			return err
+		if !item.Exists {
+			continue
 		}
 
-		if bundle.ShouldCompress(file) {
+		var err error
+		content := item.Content
+
+		if bundle.ShouldCompress(item.Path) {
 			content, err = Minify(content)
 			if err != nil {
 				return err
 			}
 		}
 
-		destination := bundle.ToDestination(file)
-		err = compactor.WriteFile(destination, content, perm)
+		destination := bundle.ToDestination(item.Path)
+		err = os.Write(destination, content, item.Permission)
 
 		if err != nil {
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".json"},
+		Run:        RunProcessor,
+		Delete:     generic.DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }

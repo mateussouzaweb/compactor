@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // CreateCopy make a WEBP copy of a image file from almost any format
 func CreateCopy(source string, destination string, quality int) error {
 
-	_, err := compactor.ExecCommand(
+	_, err := os.Exec(
 		"cwebp",
 		"-q", fmt.Sprintf("%d", quality),
 		destination,
@@ -21,26 +22,33 @@ func CreateCopy(source string, destination string, quality int) error {
 }
 
 // WEBP processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{})
-	}
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
+		if !item.Exists {
+			continue
+		}
 
-	for _, file := range files {
-
-		destination := bundle.ToDestination(file)
-		err := compactor.CopyFile(file, destination)
+		destination := bundle.ToDestination(item.Path)
+		err := os.Copy(item.Path, destination)
 
 		if err != nil {
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".webp"},
+		Run:        RunProcessor,
+		Delete:     generic.DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }

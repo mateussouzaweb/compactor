@@ -1,34 +1,85 @@
 package generic
 
-import "github.com/mateussouzaweb/compactor/compactor"
+import (
+	"strings"
 
-func DeleteProcessor(bundle *compactor.Bundle, logger *compactor.Logger, extraFormats []string) error {
+	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
+)
 
-	toDelete := []string{}
+// RunProcessor create generic copy of file(s) to destination
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if bundle.IsToMultipleDestinations() {
-		for _, file := range bundle.GetFiles() {
+	if bundle.ShouldOutputToMany() {
 
-			hash, err := compactor.GetChecksum([]string{file})
+		for _, item := range bundle.Items {
+
+			if !item.Exists {
+				continue
+			}
+
+			destination := bundle.ToDestination(item.Path)
+			err := os.Copy(item.Path, destination)
 
 			if err != nil {
 				return err
 			}
 
-			destination := bundle.ToDestination(file)
-			hashed := bundle.ToHashed(destination, hash)
-			toDelete = append(toDelete, destination, hashed)
+			bundle.Processed(item.Path)
+
+		}
+
+		return nil
+	}
+
+	content := ""
+	for _, item := range bundle.Items {
+		if item.Exists {
+			content += item.Content
+		}
+	}
+
+	destination := bundle.ToDestination(bundle.Destination.File)
+	perm := bundle.Items[0].Permission
+	err := os.Write(destination, content, perm)
+
+	if err == nil {
+		bundle.Written(destination)
+	}
+
+	return err
+}
+
+// DeleteProcessor remove the destination file(s)
+func DeleteProcessor(bundle *compactor.Bundle) error {
+
+	toDelete := []string{}
+
+	if bundle.ShouldOutputToMany() {
+		for _, item := range bundle.Items {
+
+			destination := bundle.ToDestination(item.Path)
+			hashed := bundle.ToHashed(destination, item.Checksum)
+			previous := bundle.ToHashed(destination, item.Previous)
+			toDelete = append(toDelete, destination, hashed, previous)
 
 		}
 	} else {
 
-		hash, err := compactor.GetChecksum(bundle.GetFiles())
+		content := ""
+		for _, item := range bundle.Items {
+			if item.Exists {
+				content += item.Content
+			}
+		}
+
+		hash, err := os.Checksum(content)
 
 		if err != nil {
 			return err
 		}
 
-		destination := bundle.GetDestination()
+		destination := bundle.ToDestination(bundle.Destination.File)
 		hashed := bundle.ToHashed(destination, hash)
 		toDelete = append(toDelete, destination, hashed)
 
@@ -36,77 +87,54 @@ func DeleteProcessor(bundle *compactor.Bundle, logger *compactor.Logger, extraFo
 
 	for _, file := range toDelete {
 
-		if !compactor.ExistFile(file) {
+		if !os.Exist(file) {
 			continue
 		}
 
-		err := compactor.DeleteFile(file)
+		err := os.Delete(file)
 		if err != nil {
 			return err
 		}
 
-		logger.AddDeleted(file)
+		bundle.Deleted(file)
 
-	}
-
-	for _, file := range toDelete {
-		for _, format := range extraFormats {
-
-			extra := bundle.ToExtension(file, format)
-
-			if !compactor.ExistFile(extra) {
-				continue
-			}
-
-			err := compactor.DeleteFile(extra)
-			if err != nil {
-				return err
-			}
-
-		}
 	}
 
 	return nil
 }
 
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+// ResolveProcessor fix the path for given file path
+func ResolveProcessor(path string) (string, error) {
 
-	if action.IsDelete() {
-		return DeleteProcessor(bundle, logger, []string{})
-	}
+	bundle := compactor.GetBundleFor(path)
 
-	files := bundle.GetFiles()
+	if bundle.ShouldOutputToMany() {
 
-	if bundle.IsToMultipleDestinations() {
+		destination := bundle.ToDestination(path)
+		destination = bundle.CleanPath(destination)
 
-		for _, file := range files {
-
-			destination := bundle.ToDestination(file)
-			err := compactor.CopyFile(file, destination)
-
-			if err != nil {
-				return err
-			}
-
-			logger.AddProcessed(file)
-
+		if strings.HasPrefix(path, "/") {
+			destination = "/" + destination
 		}
 
-		return nil
+		return destination, nil
 	}
 
-	content, perm, err := compactor.ReadFilesAndPermission(files)
+	destination := bundle.ToDestination(bundle.Destination.File)
+	destination = bundle.CleanPath(destination)
 
-	if err != nil {
-		return err
+	if strings.HasPrefix(path, "/") {
+		destination = "/" + destination
 	}
 
-	destination := bundle.GetDestination()
-	err = compactor.WriteFile(destination, content, perm)
+	return destination, nil
+}
 
-	if err == nil {
-		logger.AddWritten(destination)
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{},
+		Run:        RunProcessor,
+		Delete:     DeleteProcessor,
+		Resolve:    ResolveProcessor,
 	}
-
-	return err
 }

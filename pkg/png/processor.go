@@ -2,30 +2,29 @@ package png
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/webp"
 )
 
 // PNG processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{"png.webp"})
-	}
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
+		if !item.Exists {
+			continue
+		}
 
-	for _, file := range files {
-
-		destination := bundle.ToDestination(file)
-		err := compactor.CopyFile(file, destination)
+		destination := bundle.ToDestination(item.Path)
+		err := os.Copy(item.Path, destination)
 
 		if err != nil {
 			return err
 		}
 
-		if bundle.ShouldCompress(file) {
-			_, err = compactor.ExecCommand(
+		if bundle.ShouldCompress(item.Path) {
+			_, err = os.Exec(
 				"optipng",
 				"--quiet",
 				destination,
@@ -36,17 +35,54 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 			}
 		}
 
-		if bundle.ShouldGenerateProgressive(file) {
-			err = webp.CreateCopy(file, destination, 75)
+		if bundle.ShouldGenerateProgressive(item.Path) {
+			err = webp.CreateCopy(item.Path, destination, 75)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
+}
+
+// DeleteProcessor
+func DeleteProcessor(bundle *compactor.Bundle) error {
+
+	err := generic.DeleteProcessor(bundle)
+
+	if err != nil {
+		return err
+	}
+
+	for _, deleted := range bundle.Logs.Deleted {
+
+		extension := os.Extension(deleted)
+		extra := bundle.ToExtension(deleted, extension+".webp")
+
+		if !os.Exist(extra) {
+			continue
+		}
+
+		err := os.Delete(extra)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return err
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".png"},
+		Run:        RunProcessor,
+		Delete:     DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }

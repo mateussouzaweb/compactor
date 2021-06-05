@@ -4,21 +4,22 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/mateussouzaweb/compactor/os"
 )
 
 // Source struct
 type Source struct {
 	Path    string
-	Files   []string
 	Include []string
 	Exclude []string
-	Ignore  []string
 }
 
 // Destination struct
 type Destination struct {
-	Path string
-	File string
+	Path   string
+	File   string
+	Hashed bool
 }
 
 // Compress struct
@@ -42,14 +43,25 @@ type Progressive struct {
 	Exclude []string
 }
 
+// Logs struct
+type Logs struct {
+	Processed []string
+	Skipped   []string
+	Ignored   []string
+	Written   []string
+	Deleted   []string
+}
+
 // Bundle struct
 type Bundle struct {
 	Extension   string
+	Items       []*Item
 	Source      Source
 	Destination Destination
 	Compress    Compress
 	SourceMap   SourceMap
 	Progressive Progressive
+	Logs        Logs
 }
 
 // Return the clean file, without source and destination path
@@ -83,23 +95,18 @@ func (b *Bundle) MatchPatterns(file string, patterns []string) bool {
 	return false
 }
 
-// ShouldSkip return if processing should be skipped for given file
-func (b *Bundle) ShouldSkip(file string) bool {
+// ShouldInclude return if file should be included on the bundle
+func (b *Bundle) ShouldInclude(file string) bool {
 
-	if b.MatchPatterns(file, b.Source.Include) {
+	if len(b.Source.Exclude) != 0 && b.MatchPatterns(file, b.Source.Exclude) {
 		return false
 	}
 
-	if b.MatchPatterns(file, b.Source.Exclude) {
-		return true
+	if len(b.Source.Include) != 0 && !b.MatchPatterns(file, b.Source.Include) {
+		return false
 	}
 
-	return false
-}
-
-// ShouldIgnore return if processing should be ignored for given file
-func (b *Bundle) ShouldIgnore(file string) bool {
-	return b.MatchPatterns(file, b.Source.Ignore)
+	return true
 }
 
 // ShouldCompress return if compress should be enabled for given file
@@ -109,10 +116,10 @@ func (b *Bundle) ShouldCompress(file string) bool {
 		return false
 	}
 
-	if b.MatchPatterns(file, b.Compress.Include) {
-		return true
+	if len(b.Compress.Exclude) != 0 && b.MatchPatterns(file, b.Compress.Exclude) {
+		return false
 	}
-	if b.MatchPatterns(file, b.Compress.Exclude) {
+	if len(b.Compress.Include) != 0 && !b.MatchPatterns(file, b.Compress.Include) {
 		return false
 	}
 
@@ -126,10 +133,10 @@ func (b *Bundle) ShouldGenerateSourceMap(file string) bool {
 		return false
 	}
 
-	if b.MatchPatterns(file, b.SourceMap.Include) {
-		return true
+	if len(b.SourceMap.Exclude) != 0 && b.MatchPatterns(file, b.SourceMap.Exclude) {
+		return false
 	}
-	if b.MatchPatterns(file, b.SourceMap.Exclude) {
+	if len(b.SourceMap.Include) != 0 && !b.MatchPatterns(file, b.SourceMap.Include) {
 		return false
 	}
 
@@ -143,114 +150,19 @@ func (b *Bundle) ShouldGenerateProgressive(file string) bool {
 		return false
 	}
 
-	if b.MatchPatterns(file, b.Progressive.Include) {
-		return true
+	if len(b.Progressive.Exclude) != 0 && b.MatchPatterns(file, b.Progressive.Exclude) {
+		return false
 	}
-	if b.MatchPatterns(file, b.Progressive.Exclude) {
+	if len(b.Progressive.Include) != 0 && !b.MatchPatterns(file, b.Progressive.Include) {
 		return false
 	}
 
 	return true
 }
 
-// AddFile add file to bundle source files
-func (b *Bundle) AddFile(file string) bool {
-
-	file = b.CleanPath(file)
-
-	for _, existing := range b.Source.Files {
-		if existing == file {
-			return true
-		}
-	}
-
-	b.Source.Files = append(b.Source.Files, file)
-
-	return true
-}
-
-// RemoveFile remove file from bundle source files
-func (b *Bundle) RemoveFile(file string) {
-
-	file = b.CleanPath(file)
-
-	for index, existing := range b.Source.Files {
-		if existing == file {
-			b.Source.Files = append(
-				b.Source.Files[:index],
-				b.Source.Files[index+1:]...,
-			)
-			return
-		}
-	}
-
-}
-
-// Contains check if file is in bundle source files
-func (b *Bundle) ContainsFile(file string) bool {
-
-	file = b.CleanPath(file)
-
-	if file == b.Destination.File {
-		return true
-	}
-
-	for _, existing := range b.Source.Files {
-
-		if existing == file {
-			return true
-		}
-
-		match, err := path.Match(existing, file)
-
-		if err != nil {
-			continue
-		}
-		if match {
-			return true
-		}
-
-	}
-
-	return false
-}
-
-// Retrieve fullpath files from bundle source list
-func (b *Bundle) GetFiles() []string {
-
-	files := []string{}
-	patterns := []string{}
-
-	for _, file := range b.Source.Files {
-
-		if b.ShouldSkip(file) || b.ShouldIgnore(file) {
-			continue
-		}
-
-		path := filepath.Join(b.Source.Path, file)
-
-		if ExistFile(path) {
-			files = append(files, path)
-		} else {
-			patterns = append(patterns, file)
-		}
-
-	}
-
-	foundInPattern, _ := FindFilesMatch(b.Source.Path, patterns)
-	files = append(files, foundInPattern...)
-
-	return files
-}
-
-// Detect if bundle processing should have multiple destinations
-func (b *Bundle) IsToMultipleDestinations() bool {
+// Detect if bundle should output to multiple destinations
+func (b *Bundle) ShouldOutputToMany() bool {
 	return b.Destination.File == ""
-}
-
-// Return the final destination file path
-func (b *Bundle) GetDestination() string {
-	return b.ToDestination(b.Destination.File)
 }
 
 // Transform and return the full source path for file
@@ -266,9 +178,9 @@ func (b *Bundle) ToDestination(file string) string {
 // Return a file converted to a specific extension
 func (b *Bundle) ToExtension(file string, extension string) string {
 
-	previousExtension := CleanExtension(file)
-	file = strings.TrimRight(file, "."+previousExtension)
-	file = file + "." + extension
+	previousExtension := os.Extension(file)
+	file = strings.TrimSuffix(file, previousExtension)
+	file = file + extension
 
 	return file
 }
@@ -276,13 +188,38 @@ func (b *Bundle) ToExtension(file string, extension string) string {
 // Return a file converted to a hashed name to avoid caching
 func (b *Bundle) ToHashed(file string, hash string) string {
 
-	if hash == "" {
+	if hash == "" || !b.Destination.Hashed {
 		return file
 	}
 
-	extension := CleanExtension(file)
-	file = strings.TrimRight(file, "."+extension)
-	file = strings.Join([]string{file, hash, extension}, ".")
+	extension := os.Extension(file)
+	file = strings.TrimSuffix(file, extension)
+	file = file + "." + hash + extension
 
 	return file
+}
+
+// Processed append path to processed list
+func (b *Bundle) Processed(path string) {
+	b.Logs.Processed = append(b.Logs.Processed, path)
+}
+
+// Skipped append path to skipped list
+func (b *Bundle) Skipped(path string) {
+	b.Logs.Skipped = append(b.Logs.Skipped, path)
+}
+
+// Ignored append path to ignored list
+func (b *Bundle) Ignored(path string) {
+	b.Logs.Ignored = append(b.Logs.Ignored, path)
+}
+
+// Written append path to written list
+func (b *Bundle) Written(path string) {
+	b.Logs.Written = append(b.Logs.Written, path)
+}
+
+// Deleted append path to deleted list
+func (b *Bundle) Deleted(path string) {
+	b.Logs.Deleted = append(b.Logs.Deleted, path)
 }

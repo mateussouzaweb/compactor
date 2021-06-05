@@ -2,16 +2,14 @@ package html
 
 import (
 	"io/ioutil"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/css"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
-	"github.com/mateussouzaweb/compactor/pkg/sass"
-	"github.com/mateussouzaweb/compactor/pkg/typescript"
 )
 
 // HTML minify
@@ -23,7 +21,7 @@ func Minify(content string) (string, error) {
 		return content, err
 	}
 
-	defer os.Remove(file.Name())
+	defer os.Delete(file.Name())
 
 	_, err = file.WriteString(content)
 
@@ -31,7 +29,7 @@ func Minify(content string) (string, error) {
 		return content, err
 	}
 
-	_, err = compactor.ExecCommand(
+	_, err = os.Exec(
 		"html-minifier",
 		"--output", file.Name(),
 		"--collapse-whitespace",
@@ -51,7 +49,7 @@ func Minify(content string) (string, error) {
 		return content, err
 	}
 
-	content, err = compactor.ReadFile(file.Name())
+	content, err = os.Read(file.Name())
 
 	return content, err
 }
@@ -94,14 +92,7 @@ func Format(content string) (string, error) {
 			continue
 		}
 
-		file = src
-		extension := compactor.CleanExtension(src)
-
-		if extension == "js" {
-			file, err = javascript.CorrectPath(src)
-		} else {
-			file, err = typescript.CorrectPath(src)
-		}
+		file, err = javascript.ResolveProcessor(src)
 
 		if err != nil {
 			return content, err
@@ -130,16 +121,16 @@ func Format(content string) (string, error) {
 		}
 
 		file = href
-		extension := compactor.CleanExtension(href)
+		extension := os.Extension(href)
 
-		if extension == "css" {
-			file, err = css.CorrectPath(href)
-		} else if extension == "sass" || extension == "scss" {
-			file, err = sass.CorrectPath(href)
-		} else if extension == "js" {
-			file, err = javascript.CorrectPath(href)
-		} else if extension == "ts" {
-			file, err = typescript.CorrectPath(href)
+		if extension == ".css" {
+			file, err = css.ResolveProcessor(href)
+		} else if extension == ".sass" || extension == ".scss" {
+			file, err = css.ResolveProcessor(href)
+		} else if extension == ".js" {
+			file, err = javascript.ResolveProcessor(href)
+		} else if extension == ".ts" {
+			file, err = javascript.ResolveProcessor(href)
 		}
 
 		if err != nil {
@@ -154,64 +145,57 @@ func Format(content string) (string, error) {
 }
 
 // HTML processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{})
-	}
+	if bundle.ShouldOutputToMany() {
 
-	files := bundle.GetFiles()
+		for _, item := range bundle.Items {
 
-	if bundle.IsToMultipleDestinations() {
+			if !item.Exists {
+				continue
+			}
 
-		for _, file := range files {
-
-			content, perm, err := compactor.ReadFileAndPermission(file)
+			content, err := Format(item.Content)
 
 			if err != nil {
 				return err
 			}
 
-			content, err = Format(content)
-
-			if err != nil {
-				return err
-			}
-
-			if bundle.ShouldCompress(file) {
+			if bundle.ShouldCompress(item.Path) {
 				content, err = Minify(content)
 				if err != nil {
 					return err
 				}
 			}
 
-			destination := bundle.ToDestination(file)
-			err = compactor.WriteFile(destination, content, perm)
+			destination := bundle.ToDestination(item.Path)
+			err = os.Write(destination, content, item.Permission)
 
 			if err != nil {
 				return err
 			}
 
-			logger.AddProcessed(file)
+			bundle.Processed(item.Path)
 
 		}
 
 		return nil
 	}
 
-	content, perm, err := compactor.ReadFilesAndPermission(files)
+	content := ""
+	for _, item := range bundle.Items {
+		if item.Exists {
+			content += item.Content
+		}
+	}
+
+	content, err := Format(content)
 
 	if err != nil {
 		return err
 	}
 
-	content, err = Format(content)
-
-	if err != nil {
-		return err
-	}
-
-	destination := bundle.GetDestination()
+	destination := bundle.ToDestination(bundle.Destination.File)
 
 	if bundle.ShouldCompress(destination) {
 		content, err = Minify(content)
@@ -220,11 +204,21 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		}
 	}
 
-	err = compactor.WriteFile(destination, content, perm)
+	perm := bundle.Items[0].Permission
+	err = os.Write(destination, content, perm)
 
 	if err == nil {
-		logger.AddWritten(destination)
+		bundle.Written(destination)
 	}
 
 	return err
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".html", ".htm"},
+		Run:        RunProcessor,
+		Delete:     generic.DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }

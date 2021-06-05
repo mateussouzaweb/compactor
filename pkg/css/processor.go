@@ -2,45 +2,38 @@ package css
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // CSS processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{"css.map"})
-	}
+	if bundle.ShouldOutputToMany() {
 
-	files := bundle.GetFiles()
+		for _, item := range bundle.Items {
 
-	if bundle.IsToMultipleDestinations() {
-
-		for _, file := range files {
-
-			hash, err := compactor.GetChecksum([]string{file})
-
-			if err != nil {
-				return err
+			if !item.Exists {
+				continue
 			}
 
-			destination := bundle.ToDestination(file)
-			destination = bundle.ToHashed(destination, hash)
-			destination = bundle.ToExtension(destination, "css")
+			destination := bundle.ToDestination(item.Path)
+			destination = bundle.ToHashed(destination, item.Checksum)
+			destination = bundle.ToExtension(destination, ".css")
 
 			args := []string{
-				file + ":" + destination,
+				item.Path + ":" + destination,
 			}
 
-			if bundle.ShouldCompress(file) {
+			if bundle.ShouldCompress(item.Path) {
 				args = append(args, "--style", "compressed")
 			}
 
-			if bundle.ShouldGenerateSourceMap(file) {
+			if bundle.ShouldGenerateSourceMap(item.Path) {
 				args = append(args, "--source-map", "--embed-sources")
 			}
 
-			_, err = compactor.ExecCommand(
+			_, err := os.Exec(
 				"sass",
 				args...,
 			)
@@ -49,30 +42,31 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 				return err
 			}
 
-			logger.AddProcessed(file)
+			bundle.Processed(item.Path)
 
 		}
 
 		return nil
 	}
 
-	content, perm, err := compactor.ReadFilesAndPermission(files)
+	content := ""
+	for _, item := range bundle.Items {
+		if item.Exists {
+			content += item.Content
+		}
+	}
+
+	hash, err := os.Checksum(content)
 
 	if err != nil {
 		return err
 	}
 
-	hash, err := compactor.GetChecksum(files)
-
-	if err != nil {
-		return err
-	}
-
-	destination := bundle.GetDestination()
+	destination := bundle.ToDestination(bundle.Destination.File)
 	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, "css")
-
-	err = compactor.WriteFile(destination, content, perm)
+	destination = bundle.ToExtension(destination, ".css")
+	perm := bundle.Items[0].Permission
+	err = os.Write(destination, content, perm)
 
 	if err != nil {
 		return err
@@ -90,59 +84,91 @@ func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compa
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
-	_, err = compactor.ExecCommand(
+	_, err = os.Exec(
 		"sass",
 		args...,
 	)
 
 	if err == nil {
-		logger.AddProcessed(destination)
+		bundle.Processed(destination)
 	}
 
 	return nil
 }
 
-// CorrectPath fix the path for given src
-func CorrectPath(src string) (string, error) {
+// CSS delete processor
+func DeleteProcessor(bundle *compactor.Bundle) error {
 
-	bundle := compactor.RetrieveBundleFor(src)
+	err := generic.DeleteProcessor(bundle)
 
-	if bundle.IsToMultipleDestinations() {
+	if err != nil {
+		return err
+	}
 
-		source := bundle.ToSource(src)
-		hash, err := compactor.GetChecksum([]string{source})
+	for _, deleted := range bundle.Logs.Deleted {
 
+		extra := bundle.ToExtension(deleted, ".css.map")
+
+		if !os.Exist(extra) {
+			continue
+		}
+
+		err := os.Delete(extra)
 		if err != nil {
-			return "", err
+			return err
 		}
 
-		destination := bundle.ToDestination(src)
-		destination = bundle.ToHashed(destination, hash)
-		destination = bundle.ToExtension(destination, "css")
-		destination = bundle.CleanPath(destination)
+	}
 
-		if src[0] == '/' {
-			destination = "/" + destination
-		}
+	return err
+}
+
+// ResolveProcessor fix the path for given file path
+func ResolveProcessor(path string) (string, error) {
+
+	destination, err := generic.ResolveProcessor(path)
+
+	if err != nil {
+		return destination, err
+	}
+
+	bundle := compactor.GetBundleFor(path)
+
+	if bundle.ShouldOutputToMany() {
+
+		source := bundle.ToSource(path)
+		item := compactor.Get(source)
+
+		destination := bundle.ToHashed(path, item.Checksum)
+		destination = bundle.ToExtension(destination, ".css")
 
 		return destination, nil
 	}
 
-	files := bundle.GetFiles()
-	hash, err := compactor.GetChecksum(files)
+	content := ""
+	for _, item := range bundle.Items {
+		if item.Exists {
+			content += item.Content
+		}
+	}
+
+	hash, err := os.Checksum(content)
 
 	if err != nil {
-		return "", err
+		return destination, err
 	}
 
-	destination := bundle.GetDestination()
 	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, "css")
-	destination = bundle.CleanPath(destination)
-
-	if src[0] == '/' {
-		destination = "/" + destination
-	}
+	destination = bundle.ToExtension(destination, ".css")
 
 	return destination, nil
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".css"},
+		Run:        RunProcessor,
+		Delete:     DeleteProcessor,
+		Resolve:    ResolveProcessor,
+	}
 }

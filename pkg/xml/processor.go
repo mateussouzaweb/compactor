@@ -2,6 +2,7 @@ package xml
 
 import (
 	"github.com/mateussouzaweb/compactor/compactor"
+	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/xml"
@@ -19,39 +20,44 @@ func Minify(content string) (string, error) {
 }
 
 // XML processor
-func Processor(action *compactor.Action, bundle *compactor.Bundle, logger *compactor.Logger) error {
+func RunProcessor(bundle *compactor.Bundle) error {
 
-	if action.IsDelete() {
-		return generic.DeleteProcessor(bundle, logger, []string{})
-	}
+	// TODO: to multiple, merge xmls as array and join data
+	for _, item := range bundle.Items {
 
-	files := bundle.GetFiles()
-
-	for _, file := range files {
-
-		content, perm, err := compactor.ReadFileAndPermission(file)
-
-		if err != nil {
-			return err
+		if !item.Exists {
+			continue
 		}
 
-		if bundle.ShouldCompress(file) {
+		content := item.Content
+		var err error
+
+		if bundle.ShouldCompress(item.Path) {
 			content, err = Minify(content)
 			if err != nil {
 				return err
 			}
 		}
 
-		destination := bundle.ToDestination(file)
-		err = compactor.WriteFile(destination, content, perm)
+		destination := bundle.ToDestination(item.Path)
+		err = os.Write(destination, content, item.Permission)
 
 		if err != nil {
 			return err
 		}
 
-		logger.AddProcessed(file)
+		bundle.Processed(item.Path)
 
 	}
 
 	return nil
+}
+
+func Plugin() *compactor.Plugin {
+	return &compactor.Plugin{
+		Extensions: []string{".xml"},
+		Run:        RunProcessor,
+		Delete:     generic.DeleteProcessor,
+		Resolve:    generic.ResolveProcessor,
+	}
 }
