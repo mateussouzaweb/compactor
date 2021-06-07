@@ -195,6 +195,7 @@ func NewBundle() *Bundle {
 	bundle := *_bundle
 	bundle.Extension = ""
 	bundle.Destination.File = ""
+	bundle.Destination.Folder = ""
 	bundle.Destination.Path = _bundle.Destination.Path
 	bundle.Destination.Hashed = _bundle.Destination.Hashed
 
@@ -208,7 +209,7 @@ func GetBundleFromMapper(mapper *Mapper) *Bundle {
 
 	// Check if mapper destination is to file or folder
 	if strings.HasSuffix(mapper.Target, "/") {
-		bundle.Destination.Path = bundle.ToDestination(mapper.Target)
+		bundle.Destination.Folder = bundle.CleanPath(mapper.Target)
 	} else {
 		bundle.Destination.File = bundle.CleanPath(mapper.Target)
 	}
@@ -318,12 +319,7 @@ func GetBundleFor(path string) *Bundle {
 func Process(bundle *Bundle) error {
 
 	// Make sure folder exists to avoid issues
-	destination := bundle.Destination.Path
-
-	if bundle.Destination.File != "" {
-		destination = bundle.ToDestination(bundle.Destination.File)
-	}
-
+	destination := bundle.ToDestination(bundle.Destination.File)
 	err := os.EnsureDirectory(destination)
 
 	if err != nil {

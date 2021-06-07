@@ -18,6 +18,7 @@ type Source struct {
 // Destination struct
 type Destination struct {
 	Path   string
+	Folder string
 	File   string
 	Hashed bool
 }
@@ -172,7 +173,23 @@ func (b *Bundle) ToSource(file string) string {
 
 // Transform and return the full destination path for file
 func (b *Bundle) ToDestination(file string) string {
-	return filepath.Join(b.Destination.Path, b.CleanPath(file))
+
+	// Force the custom defined destination
+	if b.Destination.File != "" || file == "" {
+		file = b.Destination.File
+	}
+
+	// If has custom destination folder
+	// Then current file param does not matter, we use just the filename
+	if b.Destination.Folder != "" {
+		file = os.File(file)
+	}
+
+	return filepath.Join(
+		b.Destination.Path,
+		b.Destination.Folder,
+		b.CleanPath(file),
+	)
 }
 
 // Return a file converted to a specific extension
