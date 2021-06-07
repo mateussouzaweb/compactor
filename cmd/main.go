@@ -292,8 +292,8 @@ func main() {
 		func(value string) error {
 
 			split := strings.Split(value, ":")
-			target := split[0]
-			files := strings.Split(split[1], ",")
+			files := strings.Split(split[0], ",")
+			target := split[1]
 
 			maps[target] = files
 
