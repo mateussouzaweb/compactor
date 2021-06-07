@@ -1,6 +1,8 @@
 package compactor
 
 import (
+	"strings"
+
 	"github.com/mateussouzaweb/compactor/os"
 )
 
@@ -204,7 +206,8 @@ func GetBundleFromMapper(mapper *Mapper) *Bundle {
 
 	bundle := NewBundle()
 
-	if os.Extension(mapper.Target) == "" {
+	// Check if mapper destination is to file or folder
+	if strings.HasSuffix(mapper.Target, "/") {
 		bundle.Destination.Path = bundle.ToDestination(mapper.Target)
 	} else {
 		bundle.Destination.File = bundle.CleanPath(mapper.Target)
