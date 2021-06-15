@@ -214,19 +214,19 @@ func GetBundleFromMapper(mapper *Mapper) *Bundle {
 		bundle.Destination.File = bundle.CleanPath(mapper.Target)
 	}
 
-	items := Matches(func(item *Item) bool {
+	// Use loop to respect mapper file order
+	for _, pattern := range mapper.Files {
+		found := Matches(func(item *Item) bool {
+			if !bundle.MatchPatterns(item.Path, []string{pattern}) {
+				return false
+			}
+			return bundle.ShouldInclude(item.Path)
+		})
+		bundle.Items = append(bundle.Items, found...)
+	}
 
-		if !bundle.MatchPatterns(item.Path, mapper.Files) {
-			return false
-		}
-
-		return bundle.ShouldInclude(item.Path)
-	})
-
-	bundle.Items = items
-
-	if len(items) != 0 {
-		bundle.Extension = items[0].Extension
+	if len(bundle.Items) != 0 {
+		bundle.Extension = bundle.Items[0].Extension
 	}
 
 	return bundle
