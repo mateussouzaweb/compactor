@@ -31,14 +31,14 @@ func trueOrFalse(value string) bool {
 	return false
 }
 
-func processBundle(bundle *compactor.Bundle) {
+func processBundle(bundle *compactor.Bundle) error {
 
 	err := compactor.Process(bundle)
 
 	if err != nil {
 		os.Printf(os.Fatal, "[ERROR] %s\n", bundle.Destination)
 		os.Printf(os.Warn, "%v\n", err)
-		return
+		return err
 	}
 
 	for _, f := range bundle.Logs.Processed {
@@ -57,6 +57,7 @@ func processBundle(bundle *compactor.Bundle) {
 		os.Printf(os.Warn, "[DELETED] %s\n", bundle.CleanPath(f))
 	}
 
+	return err
 }
 
 func main() {
