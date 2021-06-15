@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,27 +23,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/xml"
 )
 
-// Colors
-var (
-	Reset   = "\033[0m"
-	Red     = "\033[31m"
-	Green   = "\033[32m"
-	Yellow  = "\033[33m"
-	Blue    = "\033[34m"
-	Purple  = "\033[35m"
-	Cyan    = "\033[36m"
-	Gray    = "\033[37m"
-	White   = "\033[97m"
-	Info    = Cyan
-	Warn    = Yellow
-	Fatal   = Red
-	Success = Green
-)
-
-func print(color string, format string, args ...interface{}) {
-	fmt.Printf(color+format+Reset, args...)
-}
-
 func trueOrFalse(value string) bool {
 	value = strings.ToLower(value)
 	if value == "true" || value == "t" || value == "1" {
@@ -58,25 +36,25 @@ func processBundle(bundle *compactor.Bundle) {
 	err := compactor.Process(bundle)
 
 	if err != nil {
-		print(Fatal, "[ERROR] %s\n", bundle.Destination)
-		print(Warn, "%v\n", err)
+		os.Printf(os.Fatal, "[ERROR] %s\n", bundle.Destination)
+		os.Printf(os.Warn, "%v\n", err)
 		return
 	}
 
 	for _, f := range bundle.Logs.Processed {
-		print(Success, "[PROCESSED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Success, "[PROCESSED] %s\n", bundle.CleanPath(f))
 	}
 	for _, f := range bundle.Logs.Skipped {
-		print(Warn, "[SKIPPED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[SKIPPED] %s\n", bundle.CleanPath(f))
 	}
 	for _, f := range bundle.Logs.Ignored {
-		print(Warn, "[IGNORED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[IGNORED] %s\n", bundle.CleanPath(f))
 	}
 	for _, f := range bundle.Logs.Written {
-		print(Success, "[WRITTEN] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Success, "[WRITTEN] %s\n", bundle.CleanPath(f))
 	}
 	for _, f := range bundle.Logs.Deleted {
-		print(Warn, "[DELETED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[DELETED] %s\n", bundle.CleanPath(f))
 	}
 
 }
@@ -335,16 +313,16 @@ func main() {
 
 	// Print information
 	if version {
-		print("", "Compactor version 0.0.4\n")
+		os.Printf("", "Compactor version 0.0.4\n")
 		return
 	}
 
-	print(Purple, ":::| COMPACTOR - 0.0.4 |:::\n")
-	print(Info, "[INFO] Files source folder is %s\n", source)
-	print(Info, "[INFO] Files destination folder is %s\n", destination)
+	os.Printf(os.Purple, ":::| COMPACTOR - 0.0.4 |:::\n")
+	os.Printf(os.Notice, "[INFO] Files source folder is %s\n", source)
+	os.Printf(os.Notice, "[INFO] Files destination folder is %s\n", destination)
 
 	if !os.Exist(source) {
-		print(Fatal, "[ERROR] Files source folder does not exists\n")
+		os.Printf(os.Fatal, "[ERROR] Files source folder does not exists\n")
 		return
 	}
 
@@ -370,9 +348,9 @@ func main() {
 
 	// Run compactor processing
 	if watch {
-		print(Info, "[INFO] Running in watch mode!\n")
+		os.Printf(os.Notice, "[INFO] Running in watch mode!\n")
 	} else {
-		print(Info, "[INFO] Running in process and exit mode\n")
+		os.Printf(os.Notice, "[INFO] Running in process and exit mode\n")
 	}
 
 	for _, bundle := range compactor.GetBundles() {
