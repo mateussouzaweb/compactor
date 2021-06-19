@@ -100,33 +100,32 @@ func main() {
 	// compactor.Register("toml", toml.Plugin())
 
 	// Options
-	watch := false
 	version := false
+	watch := false
 	source, _ := filepath.Abs("src/")
 	destination, _ := filepath.Abs("dist/")
 	maps := map[string][]string{}
 
-	options := compactor.Bundle{
-		Source:      compactor.Source{Path: source},
-		Destination: compactor.Destination{Path: destination, Hashed: true},
-		Compress:    compactor.Compress{Enabled: true},
-		SourceMap:   compactor.SourceMap{Enabled: true},
-		Progressive: compactor.Progressive{Enabled: true},
-	}
-
 	// Command line flags
 	var err error
+
+	flag.BoolVar(
+		&version,
+		"version",
+		false,
+		"Print program version")
+
+	flag.BoolVar(
+		&watch,
+		"watch",
+		false,
+		"Enable watcher for live compilation [DEFAULT: false]")
 
 	flag.Func(
 		"source",
 		"Path of project source files [DEFAULT: /src]",
 		func(path string) error {
-
 			source, err = filepath.Abs(path)
-			if err == nil {
-				options.Source.Path = source
-			}
-
 			return err
 		})
 
@@ -134,12 +133,7 @@ func main() {
 		"destination",
 		"Path to the destination folder [DEFAULT: /dist]",
 		func(path string) error {
-
 			destination, err = filepath.Abs(path)
-			if err == nil {
-				options.Destination.Path = destination
-			}
-
 			return err
 		})
 
@@ -149,7 +143,7 @@ func main() {
 		func(value string) error {
 
 			enabled := trueOrFalse(value)
-			options.Destination.Hashed = enabled
+			compactor.Default.Destination.Hashed = enabled
 
 			return nil
 		})
@@ -159,7 +153,7 @@ func main() {
 		"Only include matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			options.Source.Include = append(options.Source.Include, patterns...)
+			compactor.Default.Source.Include = append(compactor.Default.Source.Include, patterns...)
 			return nil
 		})
 
@@ -168,7 +162,7 @@ func main() {
 		"Exclude matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			options.Source.Exclude = append(options.Source.Exclude, patterns...)
+			compactor.Default.Source.Exclude = append(compactor.Default.Source.Exclude, patterns...)
 			return nil
 		})
 
@@ -185,19 +179,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					options.Compress.Include = append(
-						options.Compress.Include,
+					compactor.Default.Compress.Include = append(
+						compactor.Default.Compress.Include,
 						patterns...,
 					)
 				} else {
-					options.Compress.Exclude = append(
-						options.Compress.Exclude,
+					compactor.Default.Compress.Exclude = append(
+						compactor.Default.Compress.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				options.Compress.Enabled = enabled
+				compactor.Default.Compress.Enabled = enabled
 			}
 
 			return nil
@@ -216,19 +210,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					options.SourceMap.Include = append(
-						options.SourceMap.Include,
+					compactor.Default.SourceMap.Include = append(
+						compactor.Default.SourceMap.Include,
 						patterns...,
 					)
 				} else {
-					options.SourceMap.Exclude = append(
-						options.SourceMap.Exclude,
+					compactor.Default.SourceMap.Exclude = append(
+						compactor.Default.SourceMap.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				options.SourceMap.Enabled = enabled
+				compactor.Default.SourceMap.Enabled = enabled
 			}
 
 			return nil
@@ -247,19 +241,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					options.Progressive.Include = append(
-						options.Progressive.Include,
+					compactor.Default.Progressive.Include = append(
+						compactor.Default.Progressive.Include,
 						patterns...,
 					)
 				} else {
-					options.Progressive.Exclude = append(
-						options.Progressive.Exclude,
+					compactor.Default.Progressive.Exclude = append(
+						compactor.Default.Progressive.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				options.Progressive.Enabled = enabled
+				compactor.Default.Progressive.Enabled = enabled
 			}
 
 			return nil
@@ -297,18 +291,6 @@ func main() {
 			return nil
 		})
 
-	flag.BoolVar(
-		&watch,
-		"watch",
-		false,
-		"Enable watcher for live compilation [DEFAULT: false]")
-
-	flag.BoolVar(
-		&version,
-		"version",
-		false,
-		"Print program version")
-
 	// Parse values
 	flag.Parse()
 
@@ -327,22 +309,23 @@ func main() {
 		return
 	}
 
-	// Index source files
-	compactor.Index(options.Source.Path)
+	// Set paths
+	compactor.Default.Source.Path = source
+	compactor.Default.Destination.Path = destination
 
-	// Set as default model
-	compactor.DefaultBundle(&options)
+	// Index source files
+	compactor.Index(source)
 
 	// Create custom defined maps to process
 	for target, files := range maps {
 
 		for index, file := range files {
-			files[index] = options.CleanPath(file)
+			files[index] = compactor.Default.CleanPath(file)
 		}
 
 		// TODO: target should be mapped on index to allow checksum tracking
 		// Maybe this need to goes to every file on dest
-		target = options.CleanPath(target)
+		target = compactor.Default.CleanPath(target)
 		compactor.Map(files, target)
 
 	}
@@ -363,7 +346,7 @@ func main() {
 	}
 
 	os.Watch(
-		options.Source.Path,
+		source,
 		time.Millisecond*250,
 		func(path string) error {
 

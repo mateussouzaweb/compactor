@@ -28,7 +28,20 @@ var _indexer []*Item
 var _maps []*Mapper
 
 // Default bundle model
-var _bundle = &Bundle{}
+var Default = &Bundle{
+	Destination: Destination{
+		Hashed: true,
+	},
+	Compress: Compress{
+		Enabled: true,
+	},
+	SourceMap: SourceMap{
+		Enabled: true,
+	},
+	Progressive: Progressive{
+		Enabled: true,
+	},
+}
 
 // PLUGIN METHODS
 
@@ -184,20 +197,15 @@ func Map(files []string, target string) {
 
 // BUNDLE METHODS
 
-// DefaultBundle set the default bundle instance
-func DefaultBundle(bundle *Bundle) {
-	_bundle = bundle
-}
-
 // NewBundle create and retrieve a new bundle
 func NewBundle() *Bundle {
 
-	bundle := *_bundle
+	bundle := *Default
 	bundle.Extension = ""
 	bundle.Destination.File = ""
 	bundle.Destination.Folder = ""
-	bundle.Destination.Path = _bundle.Destination.Path
-	bundle.Destination.Hashed = _bundle.Destination.Hashed
+	bundle.Destination.Path = Default.Destination.Path
+	bundle.Destination.Hashed = Default.Destination.Hashed
 
 	return &bundle
 }
