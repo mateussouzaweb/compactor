@@ -1,6 +1,8 @@
 package svg
 
 import (
+	"io/ioutil"
+
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
@@ -9,15 +11,47 @@ import (
 // SVG minify
 func Minify(content string) (string, error) {
 
-	// TODO: Viewbox removal causing bugs
-	// _, err = os.Exec(
-	// 	"svgo",
-	// 	"--quiet",
-	// 	"--input", target,
-	// 	"--output", target,
-	// )
+	config, err := ioutil.TempFile("", "svgo.*.config.js")
+	defer os.Delete(config.Name())
 
-	return content, nil
+	if err != nil {
+		return content, err
+	}
+
+	_, err = config.WriteString("module.exports = {plugins: [{ name: 'removeViewBox', active: false }]}")
+
+	if err != nil {
+		return content, err
+	}
+
+	file, err := ioutil.TempFile("", "svgo.*.svg")
+	defer os.Delete(file.Name())
+
+	if err != nil {
+		return content, err
+	}
+
+	_, err = file.WriteString(content)
+
+	if err != nil {
+		return content, err
+	}
+
+	_, err = os.Exec(
+		"svgo",
+		"--quiet",
+		"--config", config.Name(),
+		"--input", file.Name(),
+		"--output", file.Name(),
+	)
+
+	if err != nil {
+		return content, err
+	}
+
+	content, err = os.Read(file.Name())
+
+	return content, err
 }
 
 // SVG processor
