@@ -177,6 +177,9 @@ func ResolveProcessor(path string) (string, error) {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("uglifyjs", "uglify-js")
+
 	return &compactor.Plugin{
 		Extensions: []string{".js", ".mjs"},
 		Run:        RunProcessor,

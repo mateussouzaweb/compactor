@@ -82,6 +82,10 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("jpegoptim", "jpegoptim-bin")
+	os.NodeRequire("cwebp", "cwebp-bin")
+
 	return &compactor.Plugin{
 		Extensions: []string{".jpeg", ".jpg"},
 		Run:        RunProcessor,

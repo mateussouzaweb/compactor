@@ -49,6 +49,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("sass", "sass")
+
 	return &compactor.Plugin{
 		Extensions: []string{".sass", ".scss"},
 		Run:        RunProcessor,

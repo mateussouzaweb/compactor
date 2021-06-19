@@ -165,6 +165,9 @@ func ResolveProcessor(path string) (string, error) {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("sass", "sass")
+
 	return &compactor.Plugin{
 		Extensions: []string{".css"},
 		Run:        RunProcessor,

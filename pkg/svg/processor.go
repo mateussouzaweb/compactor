@@ -84,6 +84,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("svgo", "svgo")
+
 	return &compactor.Plugin{
 		Extensions: []string{".svg"},
 		Run:        RunProcessor,

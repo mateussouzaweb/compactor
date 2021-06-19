@@ -45,6 +45,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("cwebp", "cwebp-bin")
+
 	return &compactor.Plugin{
 		Extensions: []string{".webp"},
 		Run:        RunProcessor,

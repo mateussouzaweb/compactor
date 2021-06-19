@@ -114,6 +114,10 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("tsc", "typescript")
+	os.NodeRequire("uglifyjs", "uglify-js")
+
 	return &compactor.Plugin{
 		Extensions: []string{".ts", ".tsx"},
 		Run:        RunProcessor,

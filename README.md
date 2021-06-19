@@ -47,14 +47,7 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 For now, you first need to install dependencies:
 
 ```bash
-sudo su
-apt install -y jpegoptim libjpeg-progs optipng gifsicle webp nodejs npm
-
-npm install -g html-minifier
-npm install -g sass
-npm install -g typescript
-npm install -g uglify-js
-npm install -g svgo
+sudo apt install -y nodejs npm libjpeg-progs
 ```
 
 Then download the most recent binary file and make it executable:

@@ -43,6 +43,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
+
+	os.NodeRequire("gifsicle", "gifsicle")
+
 	return &compactor.Plugin{
 		Extensions: []string{".gif"},
 		Run:        RunProcessor,
