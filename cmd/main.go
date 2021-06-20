@@ -296,11 +296,11 @@ func main() {
 
 	// Print information
 	if version {
-		os.Printf("", "Compactor version 0.0.4\n")
+		os.Printf("", "Compactor version 0.0.5\n")
 		return
 	}
 
-	os.Printf(os.Purple, ":::| COMPACTOR - 0.0.4 |:::\n")
+	os.Printf(os.Purple, ":::| COMPACTOR - 0.0.5 |:::\n")
 	os.Printf(os.Notice, "[INFO] Files source folder is %s\n", source)
 	os.Printf(os.Notice, "[INFO] Files destination folder is %s\n", destination)
 
