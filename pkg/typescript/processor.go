@@ -27,6 +27,8 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			item.Path,
 			"--outFile", destination,
 			"--target", "ES6",
+			"--module", "AMD",
+			"--allowJs",
 			"--removeComments",
 		}
 
