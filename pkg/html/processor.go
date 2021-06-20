@@ -12,6 +12,11 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return os.NodeRequire("html-minifier", "html-minifier")
+}
+
 // HTML minify
 func Minify(content string) (string, error) {
 
@@ -215,11 +220,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("html-minifier", "html-minifier")
-
 	return &compactor.Plugin{
 		Extensions: []string{".html", ".htm"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     generic.DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,

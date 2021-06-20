@@ -8,6 +8,11 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return os.NodeRequire("uglifyjs", "uglify-js")
+}
+
 // Javascript processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -177,11 +182,9 @@ func ResolveProcessor(path string) (string, error) {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("uglifyjs", "uglify-js")
-
 	return &compactor.Plugin{
 		Extensions: []string{".js", ".mjs"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     DeleteProcessor,
 		Resolve:    ResolveProcessor,

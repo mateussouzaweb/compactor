@@ -360,6 +360,12 @@ func Process(bundle *Bundle) error {
 			continue
 		}
 
+		err = plugin.Init(bundle)
+
+		if err != nil {
+			return err
+		}
+
 		if action == "RUN" {
 			err = plugin.Run(bundle)
 		} else {

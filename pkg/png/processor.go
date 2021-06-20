@@ -7,6 +7,18 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/webp"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+
+	err := os.NodeRequire("optipng", "optipng-bin")
+
+	if err != nil {
+		return err
+	}
+
+	return os.NodeRequire("cwebp", "cwebp-bin")
+}
+
 // PNG processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -79,12 +91,9 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("optipng", "optipng-bin")
-	os.NodeRequire("cwebp", "cwebp-bin")
-
 	return &compactor.Plugin{
 		Extensions: []string{".png"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,

@@ -9,6 +9,18 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+
+	err := os.NodeRequire("tsc", "typescript")
+
+	if err != nil {
+		return err
+	}
+
+	return os.NodeRequire("uglifyjs", "uglify-js")
+}
+
 // Typescript processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -116,12 +128,9 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("tsc", "typescript")
-	os.NodeRequire("uglifyjs", "uglify-js")
-
 	return &compactor.Plugin{
 		Extensions: []string{".ts", ".tsx"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     javascript.DeleteProcessor,
 		Resolve:    javascript.ResolveProcessor,

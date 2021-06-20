@@ -6,6 +6,11 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/css"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return os.NodeRequire("sass", "sass")
+}
+
 // Sass processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -49,11 +54,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("sass", "sass")
-
 	return &compactor.Plugin{
 		Extensions: []string{".sass", ".scss"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     css.DeleteProcessor,
 		Resolve:    css.ResolveProcessor,

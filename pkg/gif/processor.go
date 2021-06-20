@@ -6,6 +6,11 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return os.NodeRequire("gifsicle", "gifsicle")
+}
+
 // GIF processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -43,11 +48,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("gifsicle", "gifsicle")
-
 	return &compactor.Plugin{
 		Extensions: []string{".gif"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     generic.DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,

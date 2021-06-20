@@ -8,6 +8,11 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return os.NodeRequire("svgo", "svgo")
+}
+
 // SVG minify
 func Minify(content string) (string, error) {
 
@@ -118,11 +123,9 @@ func RunProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("svgo", "svgo")
-
 	return &compactor.Plugin{
 		Extensions: []string{".svg"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     generic.DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,

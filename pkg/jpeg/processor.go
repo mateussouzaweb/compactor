@@ -7,6 +7,18 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/webp"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+
+	err := os.NodeRequire("jpegoptim", "jpegoptim-bin")
+
+	if err != nil {
+		return err
+	}
+
+	return os.NodeRequire("cwebp", "cwebp-bin")
+}
+
 // JPEG processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -82,12 +94,9 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 }
 
 func Plugin() *compactor.Plugin {
-
-	os.NodeRequire("jpegoptim", "jpegoptim-bin")
-	os.NodeRequire("cwebp", "cwebp-bin")
-
 	return &compactor.Plugin{
 		Extensions: []string{".jpeg", ".jpg"},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,
