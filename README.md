@@ -1,6 +1,6 @@
 # Compactor - Frontend compression without pain
 
-*Compactor* is a efficient alternative to generate fully compressed HTML projects, including all JS, CSS images and ony other resource files.
+*Compactor* is a efficient alternative to generate fully compressed HTML projects, including all JS, CSS images and any other resource files.
 
 It was primary designed to work with static websites where you don't have, don't need or don't want to use NodeJS and their crap system but you can also use it with your server side rendered website.
 
