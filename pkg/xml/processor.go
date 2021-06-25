@@ -56,6 +56,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Extensions: []string{".xml"},
+		Init:       generic.InitProcessor,
 		Run:        RunProcessor,
 		Delete:     generic.DeleteProcessor,
 		Resolve:    generic.ResolveProcessor,

@@ -7,6 +7,11 @@ import (
 	"github.com/mateussouzaweb/compactor/os"
 )
 
+// Init processor
+func InitProcessor(bundle *compactor.Bundle) error {
+	return nil
+}
+
 // RunProcessor create generic copy of file(s) to destination
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -133,6 +138,7 @@ func ResolveProcessor(path string) (string, error) {
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Extensions: []string{},
+		Init:       InitProcessor,
 		Run:        RunProcessor,
 		Delete:     DeleteProcessor,
 		Resolve:    ResolveProcessor,
