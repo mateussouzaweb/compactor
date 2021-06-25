@@ -104,71 +104,82 @@ func main() {
 	watch := false
 	source, _ := filepath.Abs("src/")
 	destination, _ := filepath.Abs("dist/")
-	maps := map[string][]string{}
+
+	options := compactor.Default
+	options.Source.Path = source
+	options.Destination.Path = destination
 
 	// Command line flags
-	var err error
-
 	flag.BoolVar(
 		&version,
 		"version",
 		false,
-		"Print program version")
+		"Description: Print program version")
 
 	flag.BoolVar(
 		&watch,
 		"watch",
 		false,
-		"Enable watcher for live compilation [DEFAULT: false]")
+		"Default: false\nDescription: Enable watcher for live compilation")
 
 	flag.Func(
 		"source",
-		"Path of project source files [DEFAULT: /src]",
+		"Default: /src\nDescription: Set the path of project source files",
 		func(path string) error {
-			source, err = filepath.Abs(path)
+
+			source, err := filepath.Abs(path)
+			if err == nil {
+				options.Source.Path = source
+			}
+
 			return err
 		})
 
 	flag.Func(
 		"destination",
-		"Path to the destination folder [DEFAULT: /dist]",
+		"Default: /dist\nDescription: Set the path to the destination folder",
 		func(path string) error {
-			destination, err = filepath.Abs(path)
+
+			destination, err := filepath.Abs(path)
+			if err == nil {
+				options.Destination.Path = destination
+			}
+
 			return err
 		})
 
 	flag.Func(
 		"hashed",
-		"Set if destination file should be hashed to avoid caching on outputs that support it [DEFAULT: true]",
+		"Default: true\nDescription: Set if destination file should be hashed to avoid caching on outputs that support it\nImportant: In watch mode, this option is ignored",
 		func(value string) error {
 
 			enabled := trueOrFalse(value)
-			compactor.Default.Destination.Hashed = enabled
+			options.Destination.Hashed = enabled
 
 			return nil
 		})
 
 	flag.Func(
 		"include",
-		"Only include matching files from the given pattern",
+		"Description: Only include matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			compactor.Default.Source.Include = append(compactor.Default.Source.Include, patterns...)
+			options.Source.Include = append(options.Source.Include, patterns...)
 			return nil
 		})
 
 	flag.Func(
 		"exclude",
-		"Exclude matching files from the given pattern",
+		"Description: Exclude matching files from the given pattern",
 		func(value string) error {
 			patterns := strings.Split(value, ",")
-			compactor.Default.Source.Exclude = append(compactor.Default.Source.Exclude, patterns...)
+			options.Source.Exclude = append(options.Source.Exclude, patterns...)
 			return nil
 		})
 
 	flag.Func(
 		"compress",
-		"Compress or minify code/images to reduce size [DEFAULT: true]",
+		"Default: true\nFormats: [BOOLEAN] or [PATTERN,...]:[BOOLEAN]\nDescription: Define if should compress or minify code/images to reduce size",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -179,19 +190,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					compactor.Default.Compress.Include = append(
-						compactor.Default.Compress.Include,
+					options.Compress.Include = append(
+						options.Compress.Include,
 						patterns...,
 					)
 				} else {
-					compactor.Default.Compress.Exclude = append(
-						compactor.Default.Compress.Exclude,
+					options.Compress.Exclude = append(
+						options.Compress.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				compactor.Default.Compress.Enabled = enabled
+				options.Compress.Enabled = enabled
 			}
 
 			return nil
@@ -199,7 +210,7 @@ func main() {
 
 	flag.Func(
 		"source-map",
-		"Include source map on compilation [DEFAULT: true]",
+		"Default: true\nFormats: [BOOLEAN] or [PATTERN,...]:[BOOLEAN]\nDescription: Define if should include source map reference on compilation",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -210,19 +221,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					compactor.Default.SourceMap.Include = append(
-						compactor.Default.SourceMap.Include,
+					options.SourceMap.Include = append(
+						options.SourceMap.Include,
 						patterns...,
 					)
 				} else {
-					compactor.Default.SourceMap.Exclude = append(
-						compactor.Default.SourceMap.Exclude,
+					options.SourceMap.Exclude = append(
+						options.SourceMap.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				compactor.Default.SourceMap.Enabled = enabled
+				options.SourceMap.Enabled = enabled
 			}
 
 			return nil
@@ -230,7 +241,7 @@ func main() {
 
 	flag.Func(
 		"progressive",
-		"Generate new images formats from origin as progressive enhancement [DEFAULT: true]",
+		"Default: true\nFormats: [BOOLEAN] or [PATTERN,...]:[BOOLEAN]\nDescription: Define if should generate new images formats from origin as progressive enhancement",
 		func(value string) error {
 
 			split := strings.Split(value, ":")
@@ -241,19 +252,19 @@ func main() {
 				patterns := strings.Split(split[1], ",")
 
 				if enabled {
-					compactor.Default.Progressive.Include = append(
-						compactor.Default.Progressive.Include,
+					options.Progressive.Include = append(
+						options.Progressive.Include,
 						patterns...,
 					)
 				} else {
-					compactor.Default.Progressive.Exclude = append(
-						compactor.Default.Progressive.Exclude,
+					options.Progressive.Exclude = append(
+						options.Progressive.Exclude,
 						patterns...,
 					)
 				}
 
 			} else {
-				compactor.Default.Progressive.Enabled = enabled
+				options.Progressive.Enabled = enabled
 			}
 
 			return nil
@@ -261,21 +272,42 @@ func main() {
 
 	flag.Func(
 		"bundle",
-		"Create bundled version from one or multiple files by mapping matching files from given pattern to target destination file or folder",
+		"Formats: [FILES]:[DESTINATION] or [FILES]:[DEPENDENCIES]:[DESTINATION]\nDescription: Create bundled version from one or multiple files and dependencies by mapping matching files from given pattern to target destination file or folder",
 		func(value string) error {
 
-			split := strings.Split(value, ":")
-			files := strings.Split(split[0], ",")
-			target := split[1]
+			var destination string
+			var files []string
+			var dependencies []string
 
-			maps[target] = files
+			split := strings.Split(value, ":")
+			files = strings.Split(split[0], ",")
+
+			if len(split) > 2 {
+				dependencies = strings.Split(split[1], ",")
+				destination = split[2]
+			} else {
+				destination = split[1]
+			}
+
+			for index, file := range files {
+				files[index] = options.CleanPath(file)
+			}
+			for index, file := range dependencies {
+				dependencies[index] = options.CleanPath(file)
+			}
+
+			destination = options.CleanPath(destination)
+
+			// TODO: Destination should be mapped on index to allow checksum tracking
+			// Maybe this need to goes to every file on dest
+			compactor.Map(files, dependencies, destination)
 
 			return nil
 		})
 
 	flag.Func(
 		"disable",
-		"Comma separated. Defines which plugin should be disabled. When a plugin is disabled, it uses the generic plugin instead (just copy to destination)",
+		"Format: [EXTENSION,...]\nDescription: Defines which plugin should be disabled. When a plugin is disabled, it uses the generic plugin instead (just copy to destination)",
 		func(value string) error {
 
 			list := strings.Split(value, ",")
@@ -301,34 +333,16 @@ func main() {
 	}
 
 	os.Printf(os.Purple, ":::| COMPACTOR - 0.0.5 |:::\n")
-	os.Printf(os.Notice, "[INFO] Files source folder is %s\n", source)
-	os.Printf(os.Notice, "[INFO] Files destination folder is %s\n", destination)
+	os.Printf(os.Notice, "[INFO] Files source folder is %s\n", options.Source.Path)
+	os.Printf(os.Notice, "[INFO] Files destination folder is %s\n", options.Destination.Path)
 
-	if !os.Exist(source) {
+	if !os.Exist(options.Source.Path) {
 		os.Printf(os.Fatal, "[ERROR] Files source folder does not exists\n")
 		return
 	}
 
-	// Set paths
-	compactor.Default.Source.Path = source
-	compactor.Default.Destination.Path = destination
-
 	// Index source files
-	compactor.Index(source)
-
-	// Create custom defined maps to process
-	for target, files := range maps {
-
-		for index, file := range files {
-			files[index] = compactor.Default.CleanPath(file)
-		}
-
-		// TODO: target should be mapped on index to allow checksum tracking
-		// Maybe this need to goes to every file on dest
-		target = compactor.Default.CleanPath(target)
-		compactor.Map(files, target)
-
-	}
+	compactor.Index(options.Source.Path)
 
 	// Run compactor processing
 	if watch {
@@ -346,7 +360,7 @@ func main() {
 	}
 
 	os.Watch(
-		source,
+		options.Source.Path,
 		time.Millisecond*250,
 		func(path string) error {
 
