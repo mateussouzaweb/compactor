@@ -2,6 +2,7 @@ package compactor
 
 // Mapper struct
 type Mapper struct {
-	Target string
-	Files  []string
+	Files        []string
+	Dependencies []string
+	Destination  string
 }

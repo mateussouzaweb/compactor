@@ -12,7 +12,7 @@ import (
 // - Plugins: Hold the registered plugins, used for processing.
 // - Indexer: The indexer contains information of all source files. In watch mode, this is live updated.
 // - Maps: Define the destination for each custom file. If is not in the index, then destination is equal copy.
-// - Bundle: The reference model for the creating bundles. Bundle are always temporary structs.
+// - Bundle: The reference model for the creating bundles. Bundle are always temporary struct.
 //
 // When compactor is executed, it creates bundles by parsing indexer and maps
 // Then, each bundle is processed with matching plugins
@@ -188,10 +188,11 @@ func Matches(callback func(item *Item) bool) []*Item {
 // MAPS METHODS
 
 // Map add a new map registration
-func Map(files []string, target string) {
+func Map(files []string, dependencies []string, destination string) {
 	_maps = append(_maps, &Mapper{
-		Files:  files,
-		Target: target,
+		Files:        files,
+		Dependencies: dependencies,
+		Destination:  destination,
 	})
 }
 
@@ -216,10 +217,10 @@ func GetBundleFromMapper(mapper *Mapper) *Bundle {
 	bundle := NewBundle()
 
 	// Check if mapper destination is to file or folder
-	if strings.HasSuffix(mapper.Target, "/") {
-		bundle.Destination.Folder = bundle.CleanPath(mapper.Target)
+	if strings.HasSuffix(mapper.Destination, "/") {
+		bundle.Destination.Folder = bundle.CleanPath(mapper.Destination)
 	} else {
-		bundle.Destination.File = bundle.CleanPath(mapper.Target)
+		bundle.Destination.File = bundle.CleanPath(mapper.Destination)
 	}
 
 	// Use loop to respect mapper file order
@@ -261,6 +262,15 @@ func GetBundles() []*Bundle {
 			used[item.Path] = true
 		}
 
+		for _, pattern := range mapper.Dependencies {
+			Matches(func(item *Item) bool {
+				if bundle.MatchPatterns(item.Path, []string{pattern}) {
+					used[item.Path] = true
+				}
+				return false
+			})
+		}
+
 	}
 
 	// Now process only file not included in previous bundles
@@ -287,9 +297,6 @@ func GetBundles() []*Bundle {
 // GetBundleFor retrieve the related bundle for the file
 func GetBundleFor(path string) *Bundle {
 
-	// TODO: When a file depends on another, that file should not go to another bundle
-	// It should be specially injected in the bundle, because of the dependency
-
 	// First check if file path included in bundle from maps
 	for _, mapper := range _maps {
 
@@ -301,6 +308,12 @@ func GetBundleFor(path string) *Bundle {
 
 		for _, item := range bundle.Items {
 			if item.Path == path {
+				return bundle
+			}
+		}
+
+		for _, pattern := range mapper.Dependencies {
+			if bundle.MatchPatterns(path, []string{pattern}) {
 				return bundle
 			}
 		}
