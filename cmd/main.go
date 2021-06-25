@@ -150,7 +150,7 @@ func main() {
 
 	flag.Func(
 		"hashed",
-		"Default: true\nDescription: Set if destination file should be hashed to avoid caching on outputs that support it\nImportant: In watch mode, this option is ignored",
+		"Default: true\nDescription: Set if destination file should be hashed to avoid caching on outputs that support it\nImportant: If you are running in watch mode, we recommend to disable this option",
 		func(value string) error {
 
 			enabled := trueOrFalse(value)
