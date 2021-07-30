@@ -92,6 +92,11 @@ func Format(content string) (string, error) {
 		code := match[0]
 		src := ExtractAttribute(code, "src", "")
 
+		// Ignore if is not a src script
+		if src == "" {
+			continue
+		}
+
 		// Ignore protocol scripts, only handle relative and absolute paths
 		if strings.Contains(src, "://") {
 			continue
