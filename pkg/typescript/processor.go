@@ -38,8 +38,10 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		args := []string{
 			item.Path,
 			"--outFile", destination,
-			"--target", "ES6",
-			"--module", "AMD",
+			"--target", "ES2017",
+			"--module", "None",
+			"--allowUmdGlobalAccess",
+			"--skipLibCheck",
 			"--allowJs",
 			"--removeComments",
 		}
