@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"strings"
 )
 
 // Exec run command with given arguments
 func Exec(cmd string, args ...string) (string, error) {
 
-	output, err := exec.Command(cmd, args...).Output()
+	result := exec.Command(cmd, args...)
+	output, err := result.CombinedOutput()
 
 	if err != nil {
-		_args := strings.Join(args, " ")
-		return "", fmt.Errorf("command error: %s %s\n%v\n%s", cmd, _args, err, string(output))
+		return "", fmt.Errorf("command error: %s ...\n%v\n%s", cmd, err, string(output))
 	}
 
 	return string(output), nil
