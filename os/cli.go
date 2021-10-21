@@ -1,6 +1,9 @@
 package os
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // Colors
 var (
@@ -19,7 +22,16 @@ var (
 	Success = Green
 )
 
+// NoColor check if should avoid color output on console
+func NoColor() bool {
+	return os.Getenv("NO_COLOR") != "" || os.Getenv("CLICOLOR") == "0"
+}
+
 // Print a info to standard output
 func Printf(color string, format string, args ...interface{}) {
-	fmt.Printf(color+format+Reset, args...)
+	if NoColor() {
+		fmt.Printf(format, args...)
+	} else {
+		fmt.Printf(color+format+Reset, args...)
+	}
 }
