@@ -62,19 +62,21 @@ func Minify(content string) (string, error) {
 // ExtractAttribute find the value of the attribute
 func ExtractAttribute(html string, attribute string, defaultValue string) string {
 
-	regex := regexp.MustCompile(attribute + `=[\"\']([^"']*)[\"\']`)
+	regex := regexp.MustCompile(attribute + `="([^"]*)"`)
 	match := regex.FindStringSubmatch(html)
-	value := ""
 
 	if match != nil {
-		value = match[1]
+		return match[1]
 	}
 
-	if value == "" {
-		value = defaultValue
+	regex = regexp.MustCompile(attribute + `='([^']*)'`)
+	match = regex.FindStringSubmatch(html)
+
+	if match != nil {
+		return match[1]
 	}
 
-	return value
+	return defaultValue
 }
 
 // HTML Format method
