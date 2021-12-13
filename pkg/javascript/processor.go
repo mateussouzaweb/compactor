@@ -41,6 +41,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			if bundle.ShouldGenerateSourceMap(item.Path) {
 				args = append(args, "--source-map", strings.Join([]string{
 					"includeSources",
+					"base='" + bundle.Destination.Path + "'",
 					"filename='" + item.File + ".map'",
 					"url='" + item.File + ".map'",
 				}, ","))
@@ -96,6 +97,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		file := os.File(destination)
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
+			"base='" + bundle.Destination.Path + "'",
 			"filename='" + file + ".map'",
 			"url='" + file + ".map'",
 		}, ","))
