@@ -19,7 +19,7 @@ jobs:
           go-version: 1.17
 
       - name: Build package
-        run: go build -v -o bin/compactor cmd/main.go
+        run: make build
 
       - name: Create tag release
         uses: "marvinpinto/action-automatic-releases@latest"
