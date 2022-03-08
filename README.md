@@ -6,7 +6,7 @@ It was primary designed to work with static websites where you don't have, don't
 
 The ideia is very simple: you give the root folder of the project, and *compactor* builds the compressed version of the project for you with all possible optimizations. Start with no configuration needed.
 
----
+----
 
 ## Features
 
@@ -18,14 +18,14 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 - Compiles SCSS/SASS to CSS.
 - Compiles TypeScript to Javascript.
 - Generates source-map for Javascript and CSS files.
-- Automatically add hash id to avoid caching in JS and CSS files: ``file.js`` -> ``file.485.js``
+- Automatically add hash ID to avoid caching in JS and CSS files: ``file.js`` -> ``file.485.js``
 - Compress images in GIF, JPG, JPEG, PNG and SVG format.
 - Automatically create WEBP copy from JPG, JPEG and PNG as progressive enhancement.
 - Watch mode for automation and live development.
 - CLI flags to fine tuning control.
 - Just works!
 
----
+----
 
 ## RoadMap (In Development)
 
@@ -40,7 +40,7 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 - Font compression.
 - More!
 
----
+----
 
 ## CLI - Installation and Usage
 
@@ -81,7 +81,7 @@ compactor \
     --destination /path/to/destination/
 ```
 
----
+----
 
 ## File Mappings and Bundles
 
