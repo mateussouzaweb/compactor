@@ -53,8 +53,8 @@ sudo apt install -y nodejs npm libjpeg-progs
 Then download the most recent binary file and make it executable:
 
 ```bash
-GIT_URL=https://raw.githubusercontent.com/mateussouzaweb/compactor
-sudo wget $GIT_URL/master/bin/compactor -O /usr/local/bin/compactor
+REPOSITORY="https://github.com/mateussouzaweb/compactor/releases/download/latest"
+sudo wget $REPOSITORY/compactor -O /usr/local/bin/compactor
 sudo chmod +x /usr/local/bin/compactor
 ```
 
