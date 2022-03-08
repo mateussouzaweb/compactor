@@ -21,11 +21,22 @@ jobs:
       - name: Build package
         run: go build -v -o bin/compactor cmd/main.go
 
-      - name: Create release
-        id: package_release
-        uses: ncipollo/release-action@v1
+      - name: Create tag release
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          generateReleaseNotes: true
-          allowUpdates: true
-          artifacts: bin/*
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            LICENSE.md
+            bin/*
+
+      - name: Set as latest release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Latest Build"
+          files: |
+            LICENSE.md
+            bin/*
