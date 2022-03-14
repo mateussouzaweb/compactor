@@ -10,7 +10,7 @@ import (
 
 // Init processor
 func InitProcessor(bundle *compactor.Bundle) error {
-	return os.NodeRequire("uglifyjs", "uglify-js")
+	return os.NodeRequire("terser", "terser")
 }
 
 // Javascript processor
@@ -48,7 +48,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			}
 
 			_, err := os.Exec(
-				"uglifyjs",
+				"terser",
 				args...,
 			)
 
@@ -104,7 +104,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	}
 
 	_, err = os.Exec(
-		"uglifyjs",
+		"terser",
 		args...,
 	)
 

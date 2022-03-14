@@ -18,7 +18,7 @@ func InitProcessor(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	return os.NodeRequire("uglifyjs", "uglify-js")
+	return os.NodeRequire("terser", "terser")
 }
 
 // Typescript processor
@@ -85,7 +85,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			}
 
 			_, err = os.Exec(
-				"uglifyjs",
+				"terser",
 				args...,
 			)
 
