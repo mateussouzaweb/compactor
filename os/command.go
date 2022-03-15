@@ -5,7 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/rand"
+	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // Exec run command with given arguments
@@ -35,4 +38,22 @@ func Checksum(content string) (string, error) {
 	hash := hex.EncodeToString(inBytes)
 
 	return hash, err
+}
+
+// RandomString generates a random string from give size
+func RandomString(n int) string {
+
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	result := make([]rune, n)
+	for i := range result {
+		result[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(result)
+}
+
+// Return a temporary file path
+func TemporaryFile(file string) string {
+	fileName := Name(file) + "-" + RandomString(10) + Extension(file)
+	return filepath.Join(os.TempDir(), fileName)
 }
