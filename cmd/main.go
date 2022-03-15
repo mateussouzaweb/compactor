@@ -33,28 +33,32 @@ func trueOrFalse(value string) bool {
 
 func processBundle(bundle *compactor.Bundle) error {
 
+	start := time.Now().UnixNano() / int64(time.Millisecond)
 	err := compactor.Process(bundle)
 
+	end := time.Now().UnixNano() / int64(time.Millisecond)
+	processTime := end - start
+
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %s\n", bundle.Destination)
-		os.Printf(os.Warn, "%v\n", err)
+		os.Printf(os.Fatal, "[ERROR] %s - %dms \n", bundle.Destination, processTime)
+		os.Printf(os.Fatal, "%v\n", err)
 		return err
 	}
 
 	for _, f := range bundle.Logs.Processed {
-		os.Printf(os.Success, "[PROCESSED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Success, "[PROCESSED] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
 	for _, f := range bundle.Logs.Skipped {
-		os.Printf(os.Warn, "[SKIPPED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[SKIPPED] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
 	for _, f := range bundle.Logs.Ignored {
-		os.Printf(os.Warn, "[IGNORED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[IGNORED] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
 	for _, f := range bundle.Logs.Written {
-		os.Printf(os.Success, "[WRITTEN] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Success, "[WRITTEN] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
 	for _, f := range bundle.Logs.Deleted {
-		os.Printf(os.Warn, "[DELETED] %s\n", bundle.CleanPath(f))
+		os.Printf(os.Warn, "[DELETED] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
 
 	return err
