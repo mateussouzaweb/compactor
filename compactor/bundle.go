@@ -216,6 +216,21 @@ func (b *Bundle) ToHashed(file string, hash string) string {
 	return file
 }
 
+// Return a file converted back to a non hashed name
+func (b *Bundle) ToNonHashed(file string, hash string) string {
+
+	if hash == "" || !b.Destination.Hashed {
+		return file
+	}
+
+	extension := os.Extension(file)
+	file = strings.TrimSuffix(file, extension)
+	file = strings.TrimSuffix(file, "."+hash)
+	file = file + extension
+
+	return file
+}
+
 // Processed append path to processed list
 func (b *Bundle) Processed(path string) {
 	b.Logs.Processed = append(b.Logs.Processed, path)

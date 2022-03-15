@@ -49,6 +49,45 @@ func FindConfig(path string) string {
 	return FindConfig(os.Dir(path))
 }
 
+// Rename destination file
+func RenameDestination(bundle *compactor.Bundle, item *compactor.Item, from string, to string) error {
+
+	err := os.Rename(from, to)
+
+	if err != nil {
+		return err
+	}
+
+	if bundle.ShouldGenerateSourceMap(item.Path) {
+
+		err = os.Rename(from+".map", to+".map")
+
+		if err != nil {
+			return err
+		}
+
+		fromName := os.File(from)
+		toName := os.File(to)
+
+		err = os.Replace(to,
+			"sourceMappingURL="+fromName+".map",
+			"sourceMappingURL="+toName+".map",
+		)
+
+		if err != nil {
+			return err
+		}
+
+		err = os.Replace(to+".map",
+			"\"file\":\""+fromName+"\"",
+			"\"file\":\""+toName+"\"",
+		)
+
+	}
+
+	return err
+}
+
 // Typescript processor
 func RunProcessor(bundle *compactor.Bundle) error {
 
@@ -74,7 +113,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			References:      make([]string, 0),
 		}
 
-		config.CompilerOptions["outFile"] = destination
+		config.CompilerOptions["outDir"] = os.Dir(destination)
 		config.CompilerOptions["removeComments"] = true
 		config.CompilerOptions["skipLibCheck"] = true
 		config.CompilerOptions["emitDeclarationOnly"] = false
@@ -111,6 +150,19 @@ func RunProcessor(bundle *compactor.Bundle) error {
 
 		if err != nil {
 			return err
+		}
+
+		// Rename file to hashed version if necessary
+		output := bundle.ToNonHashed(destination, item.Checksum)
+
+		if destination != output {
+
+			err = RenameDestination(bundle, item, output, destination)
+
+			if err != nil {
+				return err
+			}
+
 		}
 
 		// Compress

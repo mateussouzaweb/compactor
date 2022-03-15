@@ -99,6 +99,27 @@ func Copy(origin string, destination string) error {
 	return err
 }
 
+// Replace content inside file
+func Replace(file string, search string, replace string) error {
+
+	content, err := Read(file)
+
+	if err != nil {
+		return err
+	}
+
+	permissions, err := Permissions(file)
+
+	if err != nil {
+		return err
+	}
+
+	content = strings.ReplaceAll(content, search, replace)
+	err = Write(file, content, permissions)
+
+	return err
+}
+
 // Delete remove a file
 func Delete(file string) error {
 
