@@ -1,6 +1,8 @@
 package typescript
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
@@ -8,6 +10,16 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
+
+// TSConfig struct
+type TSConfig struct {
+	CompilerOptions map[string]interface{} `json:"compilerOptions,omitempty"`
+	Extends         string                 `json:"extends,omitempty"`
+	Exclude         []string               `json:"exclude,omitempty"`
+	Files           []string               `json:"files,omitempty"`
+	Include         []string               `json:"include,omitempty"`
+	References      []string               `json:"references,omitempty"`
+}
 
 // Init processor
 func InitProcessor(bundle *compactor.Bundle) error {
@@ -21,8 +33,26 @@ func InitProcessor(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
+// Find user defined TypeScript config file
+func FindConfig(path string) string {
+
+	if len(path) <= 1 {
+		return ""
+	}
+	if os.Exist(filepath.Join(path, "jsconfig.json")) {
+		return filepath.Join(path, "jsconfig.json")
+	}
+	if os.Exist(filepath.Join(path, "tsconfig.json")) {
+		return filepath.Join(path, "tsconfig.json")
+	}
+
+	return FindConfig(os.Dir(path))
+}
+
 // Typescript processor
 func RunProcessor(bundle *compactor.Bundle) error {
+
+	userConfig := FindConfig(bundle.Source.Path)
 
 	// TODO: to multiple, simulate a typescript file with requires/imports
 	for _, item := range bundle.Items {
@@ -35,23 +65,49 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		destination = bundle.ToHashed(destination, item.Checksum)
 		destination = bundle.ToExtension(destination, ".js")
 
-		args := []string{
-			item.Path,
-			"--outFile", destination,
-			"--target", "ES2017",
-			"--module", "None",
-			"--allowUmdGlobalAccess",
-			"--skipLibCheck",
-			"--allowJs",
-			"--removeComments",
+		config := TSConfig{
+			Extends:         userConfig,
+			CompilerOptions: make(map[string]interface{}),
+			Exclude:         make([]string, 0),
+			Files:           make([]string, 0),
+			Include:         make([]string, 0),
+			References:      make([]string, 0),
 		}
 
+		config.Include = append(config.Include, bundle.ToSource(item.Path))
+
+		config.CompilerOptions["outFile"] = destination
+		config.CompilerOptions["removeComments"] = true
+		config.CompilerOptions["skipLibCheck"] = true
+		config.CompilerOptions["isolatedModules"] = true
+		config.CompilerOptions["emitDeclarationOnly"] = false
+		config.CompilerOptions["noEmit"] = false
+
 		if bundle.ShouldGenerateSourceMap(item.Path) {
-			args = append(args, "--sourceMap", "--inlineSources")
+			config.CompilerOptions["sourceMap"] = true
+			config.CompilerOptions["inlineSources"] = true
+		}
+
+		configJson, err := json.Marshal(config)
+		if err != nil {
+			return err
+		}
+
+		configFile := os.TemporaryFile("tsconfig.json")
+		defer os.Delete(configFile)
+
+		err = os.Write(configFile, string(configJson), 0777)
+		if err != nil {
+			return err
 		}
 
 		// Compile
-		_, err := os.Exec(
+		args := []string{
+			"--build",
+			configFile,
+		}
+
+		_, err = os.Exec(
 			"tsc",
 			args...,
 		)
