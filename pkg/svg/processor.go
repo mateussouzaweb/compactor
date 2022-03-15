@@ -1,8 +1,6 @@
 package svg
 
 import (
-	"io/ioutil"
-
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
@@ -16,27 +14,19 @@ func InitProcessor(bundle *compactor.Bundle) error {
 // SVG minify
 func Minify(content string) (string, error) {
 
-	config, err := ioutil.TempFile("", "svgo.*.config.js")
-	defer os.Delete(config.Name())
+	config := os.TemporaryFile("svgo.config.js")
+	file := os.TemporaryFile("svgo.svg")
+	defer os.Delete(config)
+	defer os.Delete(file)
+
+	settings := "module.exports = {plugins: [{ name: 'removeViewBox', active: false }]}"
+	err := os.Write(config, settings, 0777)
 
 	if err != nil {
 		return content, err
 	}
 
-	_, err = config.WriteString("module.exports = {plugins: [{ name: 'removeViewBox', active: false }]}")
-
-	if err != nil {
-		return content, err
-	}
-
-	file, err := ioutil.TempFile("", "svgo.*.svg")
-	defer os.Delete(file.Name())
-
-	if err != nil {
-		return content, err
-	}
-
-	_, err = file.WriteString(content)
+	err = os.Write(file, content, 0777)
 
 	if err != nil {
 		return content, err
@@ -45,16 +35,16 @@ func Minify(content string) (string, error) {
 	_, err = os.Exec(
 		"svgo",
 		"--quiet",
-		"--config", config.Name(),
-		"--input", file.Name(),
-		"--output", file.Name(),
+		"--config", config,
+		"--input", file,
+		"--output", file,
 	)
 
 	if err != nil {
 		return content, err
 	}
 
-	content, err = os.Read(file.Name())
+	content, err = os.Read(file)
 
 	return content, err
 }

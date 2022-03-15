@@ -1,7 +1,6 @@
 package html
 
 import (
-	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -20,15 +19,10 @@ func InitProcessor(bundle *compactor.Bundle) error {
 // HTML minify
 func Minify(content string) (string, error) {
 
-	file, err := ioutil.TempFile("", "minify.*.html")
+	file := os.TemporaryFile("minify.html")
+	defer os.Delete(file)
 
-	if err != nil {
-		return content, err
-	}
-
-	defer os.Delete(file.Name())
-
-	_, err = file.WriteString(content)
+	err := os.Write(file, content, 0777)
 
 	if err != nil {
 		return content, err
@@ -36,7 +30,7 @@ func Minify(content string) (string, error) {
 
 	_, err = os.Exec(
 		"html-minifier",
-		"--output", file.Name(),
+		"--output", file,
 		"--collapse-whitespace",
 		"--conservative-collapse",
 		"--remove-comments",
@@ -47,14 +41,14 @@ func Minify(content string) (string, error) {
 		"--minify-css", "true",
 		"--minify-js", "true",
 		"--ignore-custom-fragments", "/{{[{]?(.*?)[}]?}}/",
-		file.Name(),
+		file,
 	)
 
 	if err != nil {
 		return content, err
 	}
 
-	content, err = os.Read(file.Name())
+	content, err = os.Read(file)
 
 	return content, err
 }
