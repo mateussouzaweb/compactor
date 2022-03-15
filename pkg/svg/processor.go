@@ -20,13 +20,13 @@ func Minify(content string) (string, error) {
 	defer os.Delete(file)
 
 	settings := "module.exports = {plugins: [{ name: 'removeViewBox', active: false }]}"
-	err := os.Write(config, settings, 0777)
+	err := os.Write(config, settings, 0775)
 
 	if err != nil {
 		return content, err
 	}
 
-	err = os.Write(file, content, 0777)
+	err = os.Write(file, content, 0775)
 
 	if err != nil {
 		return content, err

@@ -22,7 +22,7 @@ func Minify(content string) (string, error) {
 	file := os.TemporaryFile("minify.html")
 	defer os.Delete(file)
 
-	err := os.Write(file, content, 0777)
+	err := os.Write(file, content, 0775)
 
 	if err != nil {
 		return content, err

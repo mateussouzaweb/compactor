@@ -96,7 +96,7 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		configFile := os.TemporaryFile("tsconfig.json")
 		defer os.Delete(configFile)
 
-		err = os.Write(configFile, string(configJson), 0777)
+		err = os.Write(configFile, string(configJson), 0775)
 		if err != nil {
 			return err
 		}
