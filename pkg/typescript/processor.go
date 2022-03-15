@@ -36,14 +36,14 @@ func InitProcessor(bundle *compactor.Bundle) error {
 // Find user defined TypeScript config file
 func FindConfig(path string) string {
 
-	if len(path) <= 1 {
-		return ""
-	}
 	if os.Exist(filepath.Join(path, "jsconfig.json")) {
 		return filepath.Join(path, "jsconfig.json")
 	}
 	if os.Exist(filepath.Join(path, "tsconfig.json")) {
 		return filepath.Join(path, "tsconfig.json")
+	}
+	if len(path) <= 1 {
+		return ""
 	}
 
 	return FindConfig(os.Dir(path))
