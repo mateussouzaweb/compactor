@@ -14,8 +14,8 @@ import (
 // TSConfig struct
 type TSConfig struct {
 	CompilerOptions map[string]interface{} `json:"compilerOptions,omitempty"`
-	Extends         string                 `json:"extends,omitempty"`
 	Exclude         []string               `json:"exclude,omitempty"`
+	Extends         string                 `json:"extends,omitempty"`
 	Files           []string               `json:"files,omitempty"`
 	Include         []string               `json:"include,omitempty"`
 	References      []string               `json:"references,omitempty"`
@@ -66,20 +66,17 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		destination = bundle.ToExtension(destination, ".js")
 
 		config := TSConfig{
-			Extends:         userConfig,
 			CompilerOptions: make(map[string]interface{}),
 			Exclude:         make([]string, 0),
+			Extends:         userConfig,
 			Files:           make([]string, 0),
-			Include:         make([]string, 0),
+			Include:         []string{bundle.ToSource(item.Path)},
 			References:      make([]string, 0),
 		}
-
-		config.Include = append(config.Include, bundle.ToSource(item.Path))
 
 		config.CompilerOptions["outFile"] = destination
 		config.CompilerOptions["removeComments"] = true
 		config.CompilerOptions["skipLibCheck"] = true
-		config.CompilerOptions["isolatedModules"] = true
 		config.CompilerOptions["emitDeclarationOnly"] = false
 		config.CompilerOptions["noEmit"] = false
 
