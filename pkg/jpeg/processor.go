@@ -8,7 +8,7 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 
 	err := os.NodeRequire("jpegoptim", "jpegoptim-bin")
 
@@ -19,8 +19,8 @@ func InitProcessor(bundle *compactor.Bundle) error {
 	return os.NodeRequire("cwebp", "cwebp-bin")
 }
 
-// JPEG processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
 	for _, item := range bundle.Items {
 
@@ -35,8 +35,26 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			return err
 		}
 
+		bundle.Processed(item.Path)
+
+	}
+
+	return nil
+}
+
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
+
+	for _, item := range bundle.Items {
+
+		if !item.Exists {
+			continue
+		}
+
+		destination := bundle.ToDestination(item.Path)
+
 		if bundle.ShouldCompress(item.Path) {
-			_, err = os.Exec(
+			_, err := os.Exec(
 				"jpegoptim",
 				"--quiet",
 				"--strip-all",
@@ -51,24 +69,22 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		}
 
 		if bundle.ShouldGenerateProgressive(item.Path) {
-			err = webp.CreateCopy(item.Path, destination, 75)
-		}
+			err := webp.CreateCopy(item.Path, destination, 75)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
-
-		bundle.Processed(item.Path)
 
 	}
 
 	return nil
 }
 
-// DeleteProcessor
-func DeleteProcessor(bundle *compactor.Bundle) error {
+// Delete processor
+func Delete(bundle *compactor.Bundle) error {
 
-	err := generic.DeleteProcessor(bundle)
+	err := generic.Delete(bundle)
 
 	if err != nil {
 		return err
@@ -93,12 +109,16 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 	return err
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".jpeg", ".jpg"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "jpeg",
+		Extensions:   []string{".jpeg", ".jpg"},
+		Init:         Init,
+		Dependencies: generic.Dependencies,
+		Execute:      Execute,
+		Optimize:     Optimize,
+		Delete:       Delete,
+		Resolve:      generic.Resolve,
 	}
 }

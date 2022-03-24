@@ -7,12 +7,12 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("gifsicle", "gifsicle")
 }
 
-// GIF processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
 	for _, item := range bundle.Items {
 
@@ -27,19 +27,6 @@ func RunProcessor(bundle *compactor.Bundle) error {
 			return err
 		}
 
-		if bundle.ShouldCompress(item.Path) {
-			_, err = os.Exec(
-				"gifsicle",
-				"-03",
-				destination,
-				"-o", destination,
-			)
-		}
-
-		if err != nil {
-			return err
-		}
-
 		bundle.Processed(item.Path)
 
 	}
@@ -47,12 +34,43 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	return nil
 }
 
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
+
+	for _, item := range bundle.Items {
+
+		if !item.Exists || !bundle.ShouldCompress(item.Path) {
+			continue
+		}
+
+		destination := bundle.ToDestination(item.Path)
+
+		_, err := os.Exec(
+			"gifsicle",
+			"-03",
+			destination,
+			"-o", destination,
+		)
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".gif"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     generic.DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "gif",
+		Extensions:   []string{".gif"},
+		Init:         Init,
+		Dependencies: generic.Dependencies,
+		Execute:      Execute,
+		Optimize:     Optimize,
+		Delete:       generic.Delete,
+		Resolve:      generic.Resolve,
 	}
 }

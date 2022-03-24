@@ -1,6 +1,7 @@
 package compactor
 
 import (
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -18,7 +19,6 @@ type Source struct {
 // Destination struct
 type Destination struct {
 	Path   string
-	Folder string
 	File   string
 	Hashed bool
 }
@@ -73,6 +73,24 @@ func (b *Bundle) CleanPath(file string) string {
 	file = strings.TrimLeft(file, "/")
 
 	return file
+}
+
+// Permission return the most appropriated permission for the bundle
+func (b *Bundle) GetPermission() fs.FileMode {
+	return b.Items[0].Permission
+}
+
+// Content merge and return the content of all bundle files as final string
+func (b *Bundle) GetContent() string {
+
+	content := ""
+	for _, item := range b.Items {
+		if item.Exists {
+			content += item.Content + "\n"
+		}
+	}
+
+	return content
 }
 
 // MatchPatterns return if file match one of the given patterns
@@ -161,11 +179,6 @@ func (b *Bundle) ShouldGenerateProgressive(file string) bool {
 	return true
 }
 
-// ShouldOutputToMany detect if bundle should output to multiple destinations
-func (b *Bundle) ShouldOutputToMany() bool {
-	return b.Destination.File == ""
-}
-
 // ToSource transform and return the full source path for file
 func (b *Bundle) ToSource(file string) string {
 	return filepath.Join(b.Source.Path, b.CleanPath(file))
@@ -179,15 +192,8 @@ func (b *Bundle) ToDestination(file string) string {
 		file = b.Destination.File
 	}
 
-	// If has custom destination folder
-	// Then current file param does not matter, we use just the filename
-	if b.Destination.Folder != "" {
-		file = os.File(file)
-	}
-
 	return filepath.Join(
 		b.Destination.Path,
-		b.Destination.Folder,
 		b.CleanPath(file),
 	)
 }

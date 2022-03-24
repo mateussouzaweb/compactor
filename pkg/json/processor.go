@@ -8,7 +8,7 @@ import (
 	"github.com/tdewolff/minify/json"
 )
 
-// Json minify
+// Minify json content
 func Minify(content string) (string, error) {
 
 	m := minify.New()
@@ -19,56 +19,39 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
-// Json Merge
-// func Merge(files []string) (string, error) {
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
 
-// 	var defaultJSONDecoded map[string]interface{}
+	destination := bundle.ToDestination(bundle.Destination.File)
 
-// 	defaultJSONUnmarshalErr := json.Unmarshal([]byte(defaultJSON), &defaultJSONDecoded)
-
-// 	return content, err
-// }
-
-// Json processor
-func RunProcessor(bundle *compactor.Bundle) error {
-
-	// TODO: to multiple, merge json as array and join data
-	for _, item := range bundle.Items {
-
-		if !item.Exists {
-			continue
-		}
-
-		var err error
-		content := item.Content
-
-		if bundle.ShouldCompress(item.Path) {
-			content, err = Minify(content)
-			if err != nil {
-				return err
-			}
-		}
-
-		destination := bundle.ToDestination(item.Path)
-		err = os.Write(destination, content, item.Permission)
-
-		if err != nil {
-			return err
-		}
-
-		bundle.Processed(item.Path)
-
+	if !bundle.ShouldCompress(destination) {
+		return nil
 	}
 
-	return nil
+	content := bundle.GetContent()
+	content, err := Minify(content)
+
+	if err != nil {
+		return err
+	}
+
+	perm := bundle.GetPermission()
+	err = os.Write(destination, content, perm)
+
+	return err
+
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".json"},
-		Init:       generic.InitProcessor,
-		Run:        RunProcessor,
-		Delete:     generic.DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "json",
+		Extensions:   []string{".json"},
+		Init:         generic.Init,
+		Dependencies: generic.Dependencies,
+		Execute:      generic.Execute,
+		Optimize:     Optimize,
+		Delete:       generic.Delete,
+		Resolve:      generic.Resolve,
 	}
 }

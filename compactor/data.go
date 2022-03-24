@@ -172,7 +172,6 @@ func NewBundle() *Bundle {
 	bundle := *Default
 	bundle.Extension = ""
 	bundle.Destination.File = ""
-	bundle.Destination.Folder = ""
 	bundle.Destination.Path = Default.Destination.Path
 	bundle.Destination.Hashed = Default.Destination.Hashed
 

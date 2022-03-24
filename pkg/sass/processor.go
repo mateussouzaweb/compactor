@@ -4,17 +4,26 @@ import (
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/css"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("sass", "sass")
 }
 
-// Sass processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Dependencies processor
+func Dependencies(item *compactor.Item) ([]string, error) {
 
-	// TODO: to multiple, simulate a sass file with @imports
+	// TODO: implement
+	// item.Content
+
+	return []string{}, nil
+}
+
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
+
 	for _, item := range bundle.Items {
 
 		if !item.Exists {
@@ -53,12 +62,16 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	return nil
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".sass", ".scss"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     css.DeleteProcessor,
-		Resolve:    css.ResolveProcessor,
+		Namespace:    "sass",
+		Extensions:   []string{".sass", ".scss", ".css"},
+		Init:         Init,
+		Dependencies: Dependencies,
+		Execute:      Execute,
+		Optimize:     generic.Optimize,
+		Delete:       css.Delete,
+		Resolve:      css.Resolve,
 	}
 }

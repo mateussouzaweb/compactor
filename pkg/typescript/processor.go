@@ -7,7 +7,6 @@ import (
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
-	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
 
@@ -22,7 +21,7 @@ type TSConfig struct {
 }
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 
 	err := os.NodeRequire("tsc", "typescript")
 
@@ -31,6 +30,15 @@ func InitProcessor(bundle *compactor.Bundle) error {
 	}
 
 	return os.NodeRequire("terser", "terser")
+}
+
+// Dependencies processor
+func Dependencies(item *compactor.Item) ([]string, error) {
+
+	// TODO: implement
+	// item.Content
+
+	return []string{}, nil
 }
 
 // Find user defined TypeScript config file
@@ -50,7 +58,7 @@ func FindConfig(path string) string {
 }
 
 // Rename destination file
-func RenameDestination(bundle *compactor.Bundle, item *compactor.Item, from string, to string) error {
+func RenameDestination(from string, to string) error {
 
 	err := os.Rename(from, to)
 
@@ -58,7 +66,7 @@ func RenameDestination(bundle *compactor.Bundle, item *compactor.Item, from stri
 		return err
 	}
 
-	if bundle.ShouldGenerateSourceMap(item.Path) {
+	if os.Exist(from + ".map") {
 
 		err = os.Rename(from+".map", to+".map")
 
@@ -88,158 +96,149 @@ func RenameDestination(bundle *compactor.Bundle, item *compactor.Item, from stri
 	return err
 }
 
-// Typescript processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
-	userConfig := FindConfig(bundle.Source.Path)
-
-	// TODO: to multiple, simulate a typescript file with requires/imports
-	for _, item := range bundle.Items {
-
-		if !item.Exists {
-			continue
-		}
-
-		destination := bundle.ToDestination(item.Path)
-		destination = bundle.ToHashed(destination, item.Checksum)
-		destination = bundle.ToExtension(destination, ".js")
-
-		config := TSConfig{
-			CompilerOptions: make(map[string]interface{}),
-			Exclude:         make([]string, 0),
-			Extends:         userConfig,
-			Files:           make([]string, 0),
-			Include:         []string{bundle.ToSource(item.Path)},
-			References:      make([]string, 0),
-		}
-
-		config.CompilerOptions["outDir"] = os.Dir(destination)
-		config.CompilerOptions["removeComments"] = true
-		config.CompilerOptions["skipLibCheck"] = true
-		config.CompilerOptions["emitDeclarationOnly"] = false
-		config.CompilerOptions["noEmit"] = false
-
-		if bundle.ShouldGenerateSourceMap(item.Path) {
-			config.CompilerOptions["sourceMap"] = true
-			config.CompilerOptions["inlineSources"] = true
-		}
-
-		configJson, err := json.Marshal(config)
-		if err != nil {
-			return err
-		}
-
-		configFile := os.TemporaryFile("tsconfig.json")
-		defer os.Delete(configFile)
-
-		err = os.Write(configFile, string(configJson), 0775)
-		if err != nil {
-			return err
-		}
-
-		// Compile
-		args := []string{
-			"--build",
-			configFile,
-		}
-
-		_, err = os.Exec(
-			"tsc",
-			args...,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		// Rename file to hashed version if necessary
-		output := bundle.ToNonHashed(destination, item.Checksum)
-
-		if destination != output {
-
-			err = RenameDestination(bundle, item, output, destination)
-
-			if err != nil {
-				return err
-			}
-
-		}
-
-		// Compress
-		if bundle.ShouldCompress(item.Path) {
-
-			args = []string{
-				destination,
-				"--output", destination,
-				"--compress",
-				"--comments",
-			}
-
-			if bundle.ShouldGenerateSourceMap(item.Path) {
-
-				file := os.File(destination)
-				sourceOptions := strings.Join([]string{
-					"includeSources",
-					"filename='" + file + ".map'",
-					"url='" + file + ".map'",
-					"content='" + destination + ".map'",
-				}, ",")
-
-				args = append(args, "--source-map", sourceOptions)
-
-			}
-
-			_, err = os.Exec(
-				"terser",
-				args...,
-			)
-
-			if err != nil {
-				return err
-			}
-
-		}
-
-		bundle.Processed(item.Path)
-
-	}
-
-	return nil
-}
-
-// DeleteProcessor
-func DeleteProcessor(bundle *compactor.Bundle) error {
-
-	err := generic.DeleteProcessor(bundle)
+	content := bundle.GetContent()
+	hash, err := os.Checksum(content)
 
 	if err != nil {
 		return err
 	}
 
-	for _, deleted := range bundle.Logs.Deleted {
+	destination := bundle.ToDestination(bundle.Destination.File)
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.ToExtension(destination, ".js")
 
-		extra := bundle.ToExtension(deleted, ".js.map")
+	files := []string{}
 
-		if !os.Exist(extra) {
-			continue
+	for _, item := range bundle.Items {
+		if item.Exists {
+			files = append(files, bundle.ToSource(item.Path))
 		}
+	}
 
-		err := os.Delete(extra)
+	config := TSConfig{
+		CompilerOptions: make(map[string]interface{}),
+		Exclude:         make([]string, 0),
+		Extends:         FindConfig(bundle.Source.Path),
+		Files:           make([]string, 0),
+		Include:         files,
+		References:      make([]string, 0),
+	}
+
+	config.CompilerOptions["outDir"] = os.Dir(destination)
+	config.CompilerOptions["removeComments"] = true
+	config.CompilerOptions["skipLibCheck"] = true
+	config.CompilerOptions["emitDeclarationOnly"] = false
+	config.CompilerOptions["noEmit"] = false
+
+	if bundle.ShouldGenerateSourceMap(destination) {
+		config.CompilerOptions["sourceMap"] = true
+		config.CompilerOptions["inlineSources"] = true
+	}
+
+	configJson, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	configFile := os.TemporaryFile("tsconfig.json")
+	defer os.Delete(configFile)
+
+	err = os.Write(configFile, string(configJson), 0775)
+	if err != nil {
+		return err
+	}
+
+	// Compile
+	args := []string{
+		"--build",
+		configFile,
+	}
+
+	_, err = os.Exec(
+		"tsc",
+		args...,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Rename file to hashed version if necessary
+	output := bundle.ToNonHashed(destination, hash)
+
+	if destination != output {
+		err = RenameDestination(output, destination)
+
 		if err != nil {
 			return err
 		}
+	}
+
+	bundle.Processed(destination)
+
+	return nil
+}
+
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
+
+	content := bundle.GetContent()
+	hash, err := os.Checksum(content)
+
+	if err != nil {
+		return err
+	}
+
+	destination := bundle.ToDestination(bundle.Destination.File)
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.ToExtension(destination, ".js")
+
+	if !bundle.ShouldCompress(destination) {
+		return nil
+	}
+
+	args := []string{
+		destination,
+		"--output", destination,
+		"--compress",
+		"--comments",
+	}
+
+	if bundle.ShouldGenerateSourceMap(destination) {
+
+		file := os.File(destination)
+		sourceOptions := strings.Join([]string{
+			"includeSources",
+			"filename='" + file + ".map'",
+			"url='" + file + ".map'",
+			"content='" + destination + ".map'",
+		}, ",")
+
+		args = append(args, "--source-map", sourceOptions)
 
 	}
+
+	_, err = os.Exec(
+		"terser",
+		args...,
+	)
 
 	return err
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".ts", ".tsx"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     javascript.DeleteProcessor,
-		Resolve:    javascript.ResolveProcessor,
+		Namespace:    "typescript",
+		Extensions:   []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
+		Init:         Init,
+		Dependencies: Dependencies,
+		Execute:      Execute,
+		Optimize:     Optimize,
+		Delete:       javascript.Delete,
+		Resolve:      javascript.Resolve,
 	}
 }

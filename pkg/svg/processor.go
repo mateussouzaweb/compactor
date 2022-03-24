@@ -7,11 +7,11 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("svgo", "svgo")
 }
 
-// SVG minify
+// Minify SVG content
 func Minify(content string) (string, error) {
 
 	config := os.TemporaryFile("svgo.config.js")
@@ -49,75 +49,38 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
-// SVG processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
 
-	// TODO: to multiple, merge svgs as array and join data
-	if bundle.ShouldOutputToMany() {
+	destination := bundle.ToDestination(bundle.Destination.File)
 
-		for _, item := range bundle.Items {
-
-			if !item.Exists {
-				continue
-			}
-
-			content := item.Content
-			var err error
-
-			if bundle.ShouldCompress(item.Path) {
-				content, err = Minify(content)
-				if err != nil {
-					return err
-				}
-			}
-
-			destination := bundle.ToDestination(item.Path)
-			err = os.Write(destination, content, item.Permission)
-
-			if err != nil {
-				return err
-			}
-
-			bundle.Processed(item.Path)
-
-		}
-
+	if !bundle.ShouldCompress(destination) {
 		return nil
 	}
 
-	content := ""
-	for _, item := range bundle.Items {
-		if item.Exists {
-			content += item.Content
-		}
+	content := bundle.GetContent()
+	content, err := Minify(content)
+
+	if err != nil {
+		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
-	var err error
-
-	if bundle.ShouldCompress(destination) {
-		content, err = Minify(content)
-		if err != nil {
-			return err
-		}
-	}
-
-	perm := bundle.Items[0].Permission
+	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
-
-	if err == nil {
-		bundle.Written(destination)
-	}
 
 	return err
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".svg"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     generic.DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "svg",
+		Extensions:   []string{".svg"},
+		Init:         Init,
+		Dependencies: generic.Dependencies,
+		Execute:      generic.Execute,
+		Optimize:     Optimize,
+		Delete:       generic.Delete,
+		Resolve:      generic.Resolve,
 	}
 }

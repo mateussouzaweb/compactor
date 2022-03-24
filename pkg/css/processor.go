@@ -7,60 +7,14 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("sass", "sass")
 }
 
-// CSS processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
-	if bundle.ShouldOutputToMany() {
-
-		for _, item := range bundle.Items {
-
-			if !item.Exists {
-				continue
-			}
-
-			destination := bundle.ToDestination(item.Path)
-			destination = bundle.ToHashed(destination, item.Checksum)
-			destination = bundle.ToExtension(destination, ".css")
-
-			args := []string{
-				item.Path + ":" + destination,
-			}
-
-			if bundle.ShouldCompress(item.Path) {
-				args = append(args, "--style", "compressed")
-			}
-
-			if bundle.ShouldGenerateSourceMap(item.Path) {
-				args = append(args, "--source-map", "--embed-sources")
-			}
-
-			_, err := os.Exec(
-				"sass",
-				args...,
-			)
-
-			if err != nil {
-				return err
-			}
-
-			bundle.Processed(item.Path)
-
-		}
-
-		return nil
-	}
-
-	content := ""
-	for _, item := range bundle.Items {
-		if item.Exists {
-			content += item.Content
-		}
-	}
-
+	content := bundle.GetContent()
 	hash, err := os.Checksum(content)
 
 	if err != nil {
@@ -70,11 +24,12 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	destination := bundle.ToDestination(bundle.Destination.File)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".css")
-	perm := bundle.Items[0].Permission
+
+	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
 
-	if err != nil {
-		return err
+	if err == nil {
+		bundle.Processed(destination)
 	}
 
 	args := []string{
@@ -94,17 +49,13 @@ func RunProcessor(bundle *compactor.Bundle) error {
 		args...,
 	)
 
-	if err == nil {
-		bundle.Processed(destination)
-	}
-
-	return nil
+	return err
 }
 
-// CSS delete processor
-func DeleteProcessor(bundle *compactor.Bundle) error {
+// Delete processor
+func Delete(bundle *compactor.Bundle) error {
 
-	err := generic.DeleteProcessor(bundle)
+	err := generic.Delete(bundle)
 
 	if err != nil {
 		return err
@@ -128,34 +79,17 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 	return err
 }
 
-// ResolveProcessor fix the path for given file path
-func ResolveProcessor(path string) (string, error) {
+// Resolve processor
+func Resolve(path string) (string, error) {
 
-	destination, err := generic.ResolveProcessor(path)
+	destination, err := generic.Resolve(path)
 
 	if err != nil {
 		return destination, err
 	}
 
-	bundle := compactor.GetBundleFor(path)
-
-	if bundle.ShouldOutputToMany() {
-
-		source := bundle.ToSource(path)
-		item := compactor.Get(source)
-
-		destination := bundle.ToHashed(path, item.Checksum)
-		destination = bundle.ToExtension(destination, ".css")
-
-		return destination, nil
-	}
-
-	content := ""
-	for _, item := range bundle.Items {
-		if item.Exists {
-			content += item.Content
-		}
-	}
+	bundle := compactor.GetBundle(path)
+	content := bundle.GetContent()
 
 	hash, err := os.Checksum(content)
 
@@ -169,12 +103,16 @@ func ResolveProcessor(path string) (string, error) {
 	return destination, nil
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".css"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     DeleteProcessor,
-		Resolve:    ResolveProcessor,
+		Namespace:    "css",
+		Extensions:   []string{".css"},
+		Init:         Init,
+		Dependencies: generic.Dependencies,
+		Execute:      Execute,
+		Optimize:     generic.Optimize,
+		Delete:       Delete,
+		Resolve:      Resolve,
 	}
 }

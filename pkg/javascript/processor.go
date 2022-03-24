@@ -9,70 +9,23 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
-// Javascript processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Dependencies processor
+func Dependencies(item *compactor.Item) ([]string, error) {
 
-	if bundle.ShouldOutputToMany() {
+	// TODO: implement
+	// item.Content
 
-		for _, item := range bundle.Items {
+	return []string{}, nil
+}
 
-			if !item.Exists {
-				continue
-			}
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
-			destination := bundle.ToDestination(item.Path)
-			destination = bundle.ToHashed(destination, item.Checksum)
-			destination = bundle.ToExtension(destination, ".js")
-
-			args := []string{}
-			args = append(args, item.Path)
-			args = append(args, "--output", destination)
-
-			if bundle.ShouldCompress(item.Path) {
-				args = append(args, "--compress", "--comments")
-			} else {
-				args = append(args, "--beautify")
-			}
-
-			if bundle.ShouldGenerateSourceMap(item.Path) {
-				args = append(args, "--source-map", strings.Join([]string{
-					"includeSources",
-					"base='" + bundle.Destination.Path + "'",
-					"filename='" + item.File + ".map'",
-					"url='" + item.File + ".map'",
-				}, ","))
-			}
-
-			_, err := os.Exec(
-				"terser",
-				args...,
-			)
-
-			if err != nil {
-				return err
-			}
-
-			bundle.Processed(item.Path)
-
-		}
-
-		return nil
-	}
-
-	content := ""
-	files := []string{}
-
-	for _, item := range bundle.Items {
-		if item.Exists {
-			content += item.Content
-			files = append(files, item.Path)
-		}
-	}
-
+	content := bundle.GetContent()
 	hash, err := os.Checksum(content)
 
 	if err != nil {
@@ -82,6 +35,14 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	destination := bundle.ToDestination(bundle.Destination.File)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
+
+	files := []string{}
+
+	for _, item := range bundle.Items {
+		if item.Exists {
+			files = append(files, item.Path)
+		}
+	}
 
 	args := []string{}
 	args = append(args, files...)
@@ -115,10 +76,10 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	return err
 }
 
-// DeleteProcessor
-func DeleteProcessor(bundle *compactor.Bundle) error {
+// Delete processor
+func Delete(bundle *compactor.Bundle) error {
 
-	err := generic.DeleteProcessor(bundle)
+	err := generic.Delete(bundle)
 
 	if err != nil {
 		return err
@@ -142,34 +103,17 @@ func DeleteProcessor(bundle *compactor.Bundle) error {
 	return err
 }
 
-// ResolveProcessor fix the path for given file path
-func ResolveProcessor(path string) (string, error) {
+// Resolve processor
+func Resolve(path string) (string, error) {
 
-	destination, err := generic.ResolveProcessor(path)
+	destination, err := generic.Resolve(path)
 
 	if err != nil {
 		return destination, err
 	}
 
-	bundle := compactor.GetBundleFor(path)
-
-	if bundle.ShouldOutputToMany() {
-
-		source := bundle.ToSource(path)
-		item := compactor.Get(source)
-
-		destination := bundle.ToHashed(path, item.Checksum)
-		destination = bundle.ToExtension(destination, ".js")
-
-		return destination, nil
-	}
-
-	content := ""
-	for _, item := range bundle.Items {
-		if item.Exists {
-			content += item.Content
-		}
-	}
+	bundle := compactor.GetBundle(path)
+	content := bundle.GetContent()
 
 	hash, err := os.Checksum(content)
 
@@ -183,12 +127,16 @@ func ResolveProcessor(path string) (string, error) {
 	return destination, nil
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".js", ".mjs"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     DeleteProcessor,
-		Resolve:    ResolveProcessor,
+		Namespace:    "javascript",
+		Extensions:   []string{".js", ".mjs"},
+		Init:         Init,
+		Dependencies: Dependencies,
+		Execute:      Execute,
+		Optimize:     generic.Optimize,
+		Delete:       Delete,
+		Resolve:      Resolve,
 	}
 }

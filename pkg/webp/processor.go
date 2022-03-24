@@ -9,7 +9,7 @@ import (
 )
 
 // Init processor
-func InitProcessor(bundle *compactor.Bundle) error {
+func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("cwebp", "cwebp-bin")
 }
 
@@ -26,8 +26,8 @@ func CreateCopy(source string, destination string, quality int) error {
 	return err
 }
 
-// WEBP processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
 
 	for _, item := range bundle.Items {
 
@@ -49,12 +49,16 @@ func RunProcessor(bundle *compactor.Bundle) error {
 	return nil
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".webp"},
-		Init:       InitProcessor,
-		Run:        RunProcessor,
-		Delete:     generic.DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "webp",
+		Extensions:   []string{".webp"},
+		Init:         Init,
+		Dependencies: generic.Dependencies,
+		Execute:      Execute,
+		Optimize:     generic.Optimize,
+		Delete:       generic.Delete,
+		Resolve:      generic.Resolve,
 	}
 }

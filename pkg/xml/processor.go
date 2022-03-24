@@ -19,46 +19,38 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
-// XML processor
-func RunProcessor(bundle *compactor.Bundle) error {
+// Optimize processor
+func Optimize(bundle *compactor.Bundle) error {
 
-	// TODO: to multiple, merge xmls as array and join data
-	for _, item := range bundle.Items {
+	destination := bundle.ToDestination(bundle.Destination.File)
 
-		if !item.Exists {
-			continue
-		}
-
-		content := item.Content
-		var err error
-
-		if bundle.ShouldCompress(item.Path) {
-			content, err = Minify(content)
-			if err != nil {
-				return err
-			}
-		}
-
-		destination := bundle.ToDestination(item.Path)
-		err = os.Write(destination, content, item.Permission)
-
-		if err != nil {
-			return err
-		}
-
-		bundle.Processed(item.Path)
-
+	if !bundle.ShouldCompress(destination) {
+		return nil
 	}
 
-	return nil
+	content := bundle.GetContent()
+	content, err := Minify(content)
+
+	if err != nil {
+		return err
+	}
+
+	perm := bundle.GetPermission()
+	err = os.Write(destination, content, perm)
+
+	return err
 }
 
+// Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Extensions: []string{".xml"},
-		Init:       generic.InitProcessor,
-		Run:        RunProcessor,
-		Delete:     generic.DeleteProcessor,
-		Resolve:    generic.ResolveProcessor,
+		Namespace:    "xml",
+		Extensions:   []string{".xml"},
+		Init:         generic.Init,
+		Dependencies: generic.Dependencies,
+		Execute:      generic.Execute,
+		Optimize:     Optimize,
+		Delete:       generic.Delete,
+		Resolve:      generic.Resolve,
 	}
 }
