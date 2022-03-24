@@ -2,7 +2,7 @@ package os
 
 import "os/exec"
 
-// Check if node package command exists, otherwise, try to install the package
+// NodeRequire check if node package command exists, otherwise, try to install the package
 func NodeRequire(command string, pkg string) error {
 
 	_, err := exec.LookPath(command)

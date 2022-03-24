@@ -23,6 +23,7 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/xml"
 )
 
+// trueOrFalse returns if given value is likely to be a true or false flag
 func trueOrFalse(value string) bool {
 	value = strings.ToLower(value)
 	if value == "true" || value == "t" || value == "1" {
@@ -31,7 +32,8 @@ func trueOrFalse(value string) bool {
 	return false
 }
 
-func processBundle(bundle *compactor.Bundle) error {
+// process runs the package processing on the destination plugin
+func process(bundle *compactor.Bundle) error {
 
 	start := time.Now().UnixNano() / int64(time.Millisecond)
 	err := compactor.Process(bundle)
@@ -40,7 +42,7 @@ func processBundle(bundle *compactor.Bundle) error {
 	processTime := end - start
 
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %s - %dms \n", bundle.Destination, processTime)
+		os.Printf(os.Fatal, "[ERROR] %#s - %dms \n", bundle.Destination, processTime)
 		os.Printf(os.Fatal, "%v\n", err)
 		return err
 	}
@@ -64,44 +66,45 @@ func processBundle(bundle *compactor.Bundle) error {
 	return err
 }
 
+// main runs the program
 func main() {
 
 	// Plugins
-	compactor.Register(sass.Plugin())
-	compactor.Register(css.Plugin())
-	compactor.Register(typescript.Plugin())
-	compactor.Register(javascript.Plugin())
-	compactor.Register(json.Plugin())
-	compactor.Register(xml.Plugin())
-	compactor.Register(html.Plugin())
-	compactor.Register(svg.Plugin())
-	compactor.Register(gif.Plugin())
-	compactor.Register(jpeg.Plugin())
-	compactor.Register(png.Plugin())
-	compactor.Register(webp.Plugin())
-	compactor.Register(generic.Plugin())
+	// compactor.AddPlugin("less", less.Plugin())
+	// compactor.AddPlugin("styl", stylus.Plugin())
+	// compactor.AddPlugin("apng", apng.Plugin())
+	// compactor.AddPlugin("avif", avif.Plugin())
+	// compactor.AddPlugin("ico", ico.Plugin())
+	// compactor.AddPlugin("js", babel.Plugin())
+	// compactor.AddPlugin("js", react.Plugin())
+	// compactor.AddPlugin("jsx", react.Plugin())
+	// compactor.AddPlugin("js", vue.Plugin())
+	// compactor.AddPlugin("vue", vue.Plugin())
+	// compactor.AddPlugin("js", svelte.Plugin())
+	// compactor.AddPlugin("svelte", svelte.Plugin())
+	// compactor.AddPlugin("coffee", coffee.Plugin())
+	// compactor.AddPlugin("elm", elm.Plugin())
+	// compactor.AddPlugin("eot", eot.Plugin())
+	// compactor.AddPlugin("ttf", ttf.Plugin())
+	// compactor.AddPlugin("woff", woff.Plugin())
+	// compactor.AddPlugin("gql", graphql.Plugin())
+	// compactor.AddPlugin("graphql", graphql.Plugin())
+	// compactor.AddPlugin("yaml", yaml.Plugin())
+	// compactor.AddPlugin("toml", toml.Plugin())
 
-	// compactor.Register("less", less.Plugin())
-	// compactor.Register("styl", stylus.Plugin())
-	// compactor.Register("apng", apng.Plugin())
-	// compactor.Register("avif", avif.Plugin())
-	// compactor.Register("ico", ico.Plugin())
-	// compactor.Register("js", babel.Plugin())
-	// compactor.Register("js", react.Plugin())
-	// compactor.Register("jsx", react.Plugin())
-	// compactor.Register("js", vue.Plugin())
-	// compactor.Register("vue", vue.Plugin())
-	// compactor.Register("js", svelte.Plugin())
-	// compactor.Register("svelte", svelte.Plugin())
-	// compactor.Register("coffee", coffee.Plugin())
-	// compactor.Register("elm", elm.Plugin())
-	// compactor.Register("eot", eot.Plugin())
-	// compactor.Register("ttf", ttf.Plugin())
-	// compactor.Register("woff", woff.Plugin())
-	// compactor.Register("gql", graphql.Plugin())
-	// compactor.Register("graphql", graphql.Plugin())
-	// compactor.Register("yaml", yaml.Plugin())
-	// compactor.Register("toml", toml.Plugin())
+	compactor.AddPlugin(sass.Plugin())
+	compactor.AddPlugin(css.Plugin())
+	compactor.AddPlugin(javascript.Plugin())
+	compactor.AddPlugin(typescript.Plugin())
+	compactor.AddPlugin(json.Plugin())
+	compactor.AddPlugin(xml.Plugin())
+	compactor.AddPlugin(html.Plugin())
+	compactor.AddPlugin(svg.Plugin())
+	compactor.AddPlugin(gif.Plugin())
+	compactor.AddPlugin(jpeg.Plugin())
+	compactor.AddPlugin(png.Plugin())
+	compactor.AddPlugin(webp.Plugin())
+	compactor.AddPlugin(generic.Plugin())
 
 	// Options
 	version := false
@@ -275,53 +278,14 @@ func main() {
 		})
 
 	flag.Func(
-		"bundle",
-		"Formats: [FILES]:[DESTINATION] or [FILES]:[DEPENDENCIES]:[DESTINATION]\nDescription: Create bundled version from one or multiple files and dependencies by mapping matching files from given pattern to target destination file or folder",
-		func(value string) error {
-
-			var destination string
-			var files []string
-			var dependencies []string
-
-			split := strings.Split(value, ":")
-			files = strings.Split(split[0], ",")
-
-			if len(split) > 2 {
-				dependencies = strings.Split(split[1], ",")
-				destination = split[2]
-			} else {
-				destination = split[1]
-			}
-
-			for index, file := range files {
-				files[index] = options.CleanPath(file)
-			}
-			for index, file := range dependencies {
-				dependencies[index] = options.CleanPath(file)
-			}
-
-			destination = options.CleanPath(destination)
-
-			// TODO: Destination should be mapped on index to allow checksum tracking
-			// Maybe this need to goes to every file on dest
-			compactor.Map(files, dependencies, destination)
-
-			return nil
-		})
-
-	flag.Func(
 		"disable",
-		"Format: [EXTENSION,...]\nDescription: Defines which plugin should be disabled. When a plugin is disabled, it uses the generic plugin instead (just copy to destination)",
+		"Format: [PLUGIN,...]\nDescription: Defines which plugin should be disabled. When a plugin is disabled, the next available plugin that matches the file extension will be used. Otherwise, it forces the use of the generic plugin (simple copy to destination)",
 		func(value string) error {
 
 			list := strings.Split(value, ",")
 
-			for _, item := range list {
-				if !strings.Contains(item, ".") {
-					compactor.Unregister("." + item)
-				} else {
-					compactor.Unregister(item)
-				}
+			for _, namespace := range list {
+				compactor.RemovePlugin(namespace)
 			}
 
 			return nil
@@ -345,18 +309,23 @@ func main() {
 		return
 	}
 
-	// Index source files
-	compactor.Index(options.Source.Path)
-
-	// Run compactor processing
 	if watch {
 		os.Printf(os.Notice, "[INFO] Running in watch mode!\n")
 	} else {
 		os.Printf(os.Notice, "[INFO] Running in process and exit mode\n")
 	}
 
+	// Index source files
+	err := compactor.Index(options.Source.Path)
+
+	if err != nil {
+		os.Printf(os.Fatal, "[ERROR] %v\n", err)
+		return
+	}
+
+	// Run bundle processing
 	for _, bundle := range compactor.GetBundles() {
-		processBundle(bundle)
+		process(bundle)
 	}
 
 	if !watch {
@@ -368,16 +337,10 @@ func main() {
 		time.Millisecond*250,
 		func(path string) error {
 
-			existing := compactor.Get(path)
+			compactor.Index(os.Dir(path))
 
-			if existing.Path == "" {
-				compactor.Append(path)
-			} else {
-				compactor.Update(path)
-			}
-
-			bundle := compactor.GetBundleFor(path)
-			processBundle(bundle)
+			bundle := compactor.GetBundle(path)
+			process(bundle)
 
 			// TODO: .html files should be reprocessed when dependencies update
 
@@ -385,10 +348,10 @@ func main() {
 		},
 		func(path string) error {
 
-			bundle := compactor.GetBundleFor(path)
+			bundle := compactor.GetBundle(path)
 			compactor.Remove(path)
 
-			processBundle(bundle)
+			process(bundle)
 
 			return nil
 		},

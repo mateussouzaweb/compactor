@@ -1,31 +1,20 @@
 package compactor
 
 import (
-	"strings"
-
 	"github.com/mateussouzaweb/compactor/os"
 )
 
-//
-// To handle data, we have 4 main data lists:
-//
-// - Plugins: Hold the registered plugins, used for processing.
-// - Indexer: The indexer contains information of all source files. In watch mode, this is live updated.
-// - Maps: Define the destination for each custom file. If is not in the index, then destination is equal copy.
-// - Bundle: The reference model for the creating bundles. Bundle are always temporary struct.
-//
-// When compactor is executed, it creates bundles by parsing indexer and maps
-// Then, each bundle is processed with matching plugins
-//
+// Index list
+// The index contains information of all source files
+var _items []*Item
 
 // Plugins list
+// Hold the registered plugins, used for processing
 var _plugins []*Plugin
 
-// Indexer list
-var _indexer []*Item
-
-// Maps list
-var _maps []*Mapper
+// Bundles list
+// Contains the reference for created bundles
+var _bundles []*Bundle
 
 // Default bundle model
 var Default = &Bundle{
@@ -43,45 +32,10 @@ var Default = &Bundle{
 	},
 }
 
-// PLUGIN METHODS
-
-// Register add a new plugin to the index
-func Register(plugin *Plugin) {
-	_plugins = append(_plugins, plugin)
-}
-
-// Unregister removes all plugins that match the given extension
-func Unregister(extension string) {
-
-	var list []*Plugin
-
-	for _, _plugin := range _plugins {
-
-		var match bool
-
-		for _, _extension := range _plugin.Extensions {
-			if _extension == extension {
-				match = true
-				break
-			}
-		}
-
-		if !match {
-			list = append(list, _plugin)
-		}
-
-	}
-
-	_plugins = list
-
-}
-
-// INDEXER METHODS
-
-// Get the item that match file path on indexer
+// Get the item that match file path on index
 func Get(path string) *Item {
 
-	for _, item := range _indexer {
+	for _, item := range _items {
 		if item.Path == path {
 			return item
 		}
@@ -90,7 +44,7 @@ func Get(path string) *Item {
 	return &Item{}
 }
 
-// Append file path information to indexer
+// Append file path information to index
 func Append(path string) error {
 
 	content, checksum, perm := os.Info(path)
@@ -108,15 +62,15 @@ func Append(path string) error {
 		Previous:   "",
 	}
 
-	_indexer = append(_indexer, &item)
+	_items = append(_items, &item)
 
 	return nil
 }
 
-// Update item information on indexer if match file path
+// Update item information on index if match file path
 func Update(path string) error {
 
-	for _, item := range _indexer {
+	for _, item := range _items {
 
 		if item.Path != path {
 			continue
@@ -138,10 +92,10 @@ func Update(path string) error {
 	return nil
 }
 
-// Remove item information from indexer if match file path
+// Remove item information from index if match file path
 func Remove(path string) {
 
-	for _, item := range _indexer {
+	for _, item := range _items {
 
 		if item.Path != path {
 			continue
@@ -155,28 +109,12 @@ func Remove(path string) {
 
 }
 
-// Index walks on path and add files to the indexer
-func Index(path string) error {
-
-	files, err := os.List(path)
-
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		_ = Append(file)
-	}
-
-	return nil
-}
-
-// Matches run callback on indexer and append item if match
+// Matches run callback on index and append item if match
 func Matches(callback func(item *Item) bool) []*Item {
 
 	var items []*Item
 
-	for _, item := range _indexer {
+	for _, item := range _items {
 		if callback(item) {
 			items = append(items, item)
 		}
@@ -185,18 +123,48 @@ func Matches(callback func(item *Item) bool) []*Item {
 	return items
 }
 
-// MAPS METHODS
-
-// Map add a new map registration
-func Map(files []string, dependencies []string, destination string) {
-	_maps = append(_maps, &Mapper{
-		Files:        files,
-		Dependencies: dependencies,
-		Destination:  destination,
-	})
+// AddPlugin add a new plugin to the index
+func AddPlugin(plugin *Plugin) {
+	_plugins = append(_plugins, plugin)
 }
 
-// BUNDLE METHODS
+// RemovePlugin removes all plugins from index that match the given namespace
+func RemovePlugin(namespace string) {
+
+	var list []*Plugin
+
+	for _, _plugin := range _plugins {
+		if namespace != _plugin.Namespace {
+			list = append(list, _plugin)
+		}
+	}
+
+	_plugins = list
+
+}
+
+// GetPlugin retrieves the first found plugin for the given extension
+func GetPlugin(extension string) *Plugin {
+
+	for _, plugin := range _plugins {
+
+		// Extension plugin
+		for _, _extension := range plugin.Extensions {
+			if _extension == extension {
+				return plugin
+			}
+		}
+
+		// Generic plugin
+		// Generic plugin is always the lastest, so at least one match should happen
+		if len(plugin.Extensions) == 0 {
+			return plugin
+		}
+
+	}
+
+	return &Plugin{}
+}
 
 // NewBundle create and retrieve a new bundle
 func NewBundle() *Bundle {
@@ -211,96 +179,15 @@ func NewBundle() *Bundle {
 	return &bundle
 }
 
-// GetBundleFromMapper retrieve the final bundle from given mapper
-func GetBundleFromMapper(mapper *Mapper) *Bundle {
-
-	bundle := NewBundle()
-
-	// Check if mapper destination is to file or folder
-	if strings.HasSuffix(mapper.Destination, "/") {
-		bundle.Destination.Folder = bundle.CleanPath(mapper.Destination)
-	} else {
-		bundle.Destination.File = bundle.CleanPath(mapper.Destination)
-	}
-
-	// Use loop to respect mapper file order
-	for _, pattern := range mapper.Files {
-		found := Matches(func(item *Item) bool {
-			if !bundle.MatchPatterns(item.Path, []string{pattern}) {
-				return false
-			}
-			return bundle.ShouldInclude(item.Path)
-		})
-		bundle.Items = append(bundle.Items, found...)
-	}
-
-	if len(bundle.Items) != 0 {
-		bundle.Extension = bundle.Items[0].Extension
-	}
-
-	return bundle
+// AddBundle add a new bundle to the index
+func AddBundle(bundle *Bundle) {
+	_bundles = append(_bundles, bundle)
 }
 
-// GetBundles retrieve every possible bundle with current indexer
-func GetBundles() []*Bundle {
+// GetBundle retrieve the related bundle for the file
+func GetBundle(path string) *Bundle {
 
-	var bundles []*Bundle
-	used := make(map[string]bool)
-
-	// First create bundle from maps
-	for _, mapper := range _maps {
-
-		bundle := GetBundleFromMapper(mapper)
-
-		if len(bundle.Items) == 0 {
-			continue
-		}
-
-		bundles = append(bundles, bundle)
-
-		for _, item := range bundle.Items {
-			used[item.Path] = true
-		}
-
-		for _, pattern := range mapper.Dependencies {
-			Matches(func(item *Item) bool {
-				if bundle.MatchPatterns(item.Path, []string{pattern}) {
-					used[item.Path] = true
-				}
-				return false
-			})
-		}
-
-	}
-
-	// Now process only file not included in previous bundles
-	for _, item := range _indexer {
-
-		if _, ok := used[item.Path]; ok {
-			continue
-		}
-
-		bundle := NewBundle()
-		bundle.Extension = item.Extension
-		bundle.Items = append(bundle.Items, item)
-		bundle.Destination.File = bundle.CleanPath(item.Path)
-
-		if bundle.ShouldInclude(item.Path) {
-			bundles = append(bundles, bundle)
-		}
-
-	}
-
-	return bundles
-}
-
-// GetBundleFor retrieve the related bundle for the file
-func GetBundleFor(path string) *Bundle {
-
-	// First check if file path included in bundle from maps
-	for _, mapper := range _maps {
-
-		bundle := GetBundleFromMapper(mapper)
+	for _, bundle := range _bundles {
 
 		if bundle.Destination.File == bundle.CleanPath(path) {
 			return bundle
@@ -312,85 +199,12 @@ func GetBundleFor(path string) *Bundle {
 			}
 		}
 
-		for _, pattern := range mapper.Dependencies {
-			if bundle.MatchPatterns(path, []string{pattern}) {
-				return bundle
-			}
-		}
-
 	}
 
-	item := Get(path)
-
-	bundle := NewBundle()
-	bundle.Extension = item.Extension
-	bundle.Items = append(bundle.Items, item)
-	bundle.Destination.File = bundle.CleanPath(item.Path)
-
-	if !bundle.ShouldInclude(item.Path) {
-		bundle = NewBundle()
-	}
-
-	return bundle
+	return &Bundle{}
 }
 
-// PROCESS METHODS
-
-// Process package by running processors
-func Process(bundle *Bundle) error {
-
-	// Make sure folder exists to avoid issues
-	destination := bundle.ToDestination(bundle.Destination.File)
-	err := os.EnsureDirectory(destination)
-
-	if err != nil {
-		return err
-	}
-
-	// Determine action based on processable list
-	action := "DELETE"
-
-	for _, item := range bundle.Items {
-		if item.Exists {
-			action = "RUN"
-		}
-	}
-
-	// Find and run appropriated plugin by detecting extension
-	// Generic plugin is always the lastest, so at least one match should happen
-	for _, plugin := range _plugins {
-
-		match := false
-
-		for _, _extension := range plugin.Extensions {
-			if _extension == bundle.Extension {
-				match = true
-				break
-			}
-		}
-
-		if !match && len(plugin.Extensions) != 0 {
-			continue
-		}
-
-		err = plugin.Init(bundle)
-
-		if err != nil {
-			return err
-		}
-
-		if action == "RUN" {
-			err = plugin.Run(bundle)
-		} else {
-			err = plugin.Delete(bundle)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		break
-	}
-
-	return err
+// GetBundles retrieve all bundles in the index
+func GetBundles() []*Bundle {
+	return _bundles
 }

@@ -52,7 +52,7 @@ func RandomString(n int) string {
 	return string(result)
 }
 
-// Return a temporary file path
+// TemporaryFile return a temporary file path
 func TemporaryFile(file string) string {
 	fileName := Name(file) + "-" + RandomString(10) + Extension(file)
 	return filepath.Join(os.TempDir(), fileName)

@@ -150,24 +150,24 @@ func Chown(file string, user int, group int) error {
 	return os.Chown(file, user, group)
 }
 
-// Return the clean directory path for file
+// Dir return the clean directory path for file
 func Dir(path string) string {
 	return filepath.Dir(path)
 }
 
-// Return the clean file name for path, with extension
+// File return the clean file name for path, with extension
 func File(path string) string {
 	return filepath.Base(path)
 }
 
-// Return the clean file name for path, without extension
+// Name return the clean file name for path, without extension
 func Name(path string) string {
 	name := filepath.Base(path)
 	ext := filepath.Ext(path)
 	return strings.TrimSuffix(name, ext)
 }
 
-// Return the clean file extension, with dot
+// Extension return the clean file extension, with dot
 func Extension(file string) string {
 	return filepath.Ext(file)
 }

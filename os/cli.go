@@ -27,7 +27,7 @@ func NoColor() bool {
 	return os.Getenv("NO_COLOR") != "" || os.Getenv("CLICOLOR") == "0"
 }
 
-// Print a info to standard output
+// Printf displays a info to standard output
 func Printf(color string, format string, args ...interface{}) {
 	if NoColor() {
 		fmt.Printf(format, args...)

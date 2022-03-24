@@ -65,7 +65,7 @@ type Bundle struct {
 	Logs        Logs
 }
 
-// Return the clean file, without source and destination path
+// CleanPath return the clean file, without source and destination path
 func (b *Bundle) CleanPath(file string) string {
 
 	file = strings.Replace(file, b.Source.Path, "", 1)
@@ -161,17 +161,17 @@ func (b *Bundle) ShouldGenerateProgressive(file string) bool {
 	return true
 }
 
-// Detect if bundle should output to multiple destinations
+// ShouldOutputToMany detect if bundle should output to multiple destinations
 func (b *Bundle) ShouldOutputToMany() bool {
 	return b.Destination.File == ""
 }
 
-// Transform and return the full source path for file
+// ToSource transform and return the full source path for file
 func (b *Bundle) ToSource(file string) string {
 	return filepath.Join(b.Source.Path, b.CleanPath(file))
 }
 
-// Transform and return the full destination path for file
+// ToDestination transform and return the full destination path for file
 func (b *Bundle) ToDestination(file string) string {
 
 	// Force the custom defined destination
@@ -192,7 +192,7 @@ func (b *Bundle) ToDestination(file string) string {
 	)
 }
 
-// Return a file converted to a specific extension
+// ToExtension return a file converted to a specific extension
 func (b *Bundle) ToExtension(file string, extension string) string {
 
 	previousExtension := os.Extension(file)
@@ -202,7 +202,7 @@ func (b *Bundle) ToExtension(file string, extension string) string {
 	return file
 }
 
-// Return a file converted to a hashed name to avoid caching
+// ToHashed return a file converted to a hashed name to avoid caching
 func (b *Bundle) ToHashed(file string, hash string) string {
 
 	if hash == "" || !b.Destination.Hashed {
@@ -216,7 +216,7 @@ func (b *Bundle) ToHashed(file string, hash string) string {
 	return file
 }
 
-// Return a file converted back to a non hashed name
+// ToNonHashed return a file converted back to a non hashed name
 func (b *Bundle) ToNonHashed(file string, hash string) string {
 
 	if hash == "" || !b.Destination.Hashed {
