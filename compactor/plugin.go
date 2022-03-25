@@ -3,8 +3,8 @@ package compactor
 // Init function
 type InitFunc = func(bundle *Bundle) error
 
-// Dependencies function
-type DependenciesFunc = func(item *Item) ([]string, error)
+// Related function
+type RelatedFunc = func(item *Item) ([]Related, error)
 
 // Execute function
 type ExecuteFunc = func(bundle *Bundle) error
@@ -20,12 +20,12 @@ type ResolveFunc = func(file string) (string, error)
 
 // Plugin struct
 type Plugin struct {
-	Namespace    string
-	Extensions   []string
-	Init         InitFunc
-	Dependencies DependenciesFunc
-	Execute      ExecuteFunc
-	Optimize     OptimizeFunc
-	Delete       DeleteFunc
-	Resolve      ResolveFunc
+	Namespace  string
+	Extensions []string
+	Init       InitFunc
+	Related    RelatedFunc
+	Execute    ExecuteFunc
+	Optimize   OptimizeFunc
+	Delete     DeleteFunc
+	Resolve    ResolveFunc
 }

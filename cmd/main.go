@@ -62,8 +62,33 @@ func process(bundle *compactor.Bundle) error {
 	for _, f := range bundle.Logs.Deleted {
 		os.Printf(os.Warn, "[DELETED] %s - %dms \n", bundle.CleanPath(f), processTime)
 	}
+	for _, f := range bundle.Logs.Optimized {
+		os.Printf(os.Success, "[OPTIMIZED] %s - %dms \n", bundle.CleanPath(f), processTime)
+	}
 
-	return err
+	return nil
+}
+
+// processRelated and process the bundle for linked bundles
+func processRelated(bundle *compactor.Bundle) error {
+
+	for _, theBundle := range compactor.GetBundles() {
+
+		// Ignore if is the same bundle
+		if theBundle.Item.Path == bundle.Item.Path {
+			continue
+		}
+
+		// Check on related items to the bundle
+		for _, related := range theBundle.Item.Related {
+			if related.Item.Path == bundle.Item.Path && related.Type == "link" {
+				process(theBundle)
+			}
+		}
+
+	}
+
+	return nil
 }
 
 // main runs the program
@@ -338,22 +363,26 @@ func main() {
 		func(path string) error {
 
 			compactor.Index(os.Dir(path))
-
 			bundle := compactor.GetBundle(path)
-			process(bundle)
 
-			// TODO: .html files should be reprocessed when dependencies update
+			err := process(bundle)
+			if err != nil {
+				return err
+			}
 
-			return nil
+			return processRelated(bundle)
 		},
 		func(path string) error {
 
 			bundle := compactor.GetBundle(path)
 			compactor.Remove(path)
 
-			process(bundle)
+			err := process(bundle)
+			if err != nil {
+				return err
+			}
 
-			return nil
+			return processRelated(bundle)
 		},
 	)
 

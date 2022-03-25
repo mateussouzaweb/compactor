@@ -24,8 +24,8 @@ func IndexItems(path string) error {
 	return nil
 }
 
-// IndexDependencies detect the dependencies on the index
-func IndexDependencies() error {
+// IndexRelated detect the related assets on the index
+func IndexRelated() error {
 
 	for _, item := range _items {
 
@@ -35,22 +35,13 @@ func IndexDependencies() error {
 			continue
 		}
 
-		detected, err := plugin.Dependencies(item)
+		detected, err := plugin.Related(item)
 
 		if err != nil {
 			return err
 		}
 
-		dependencies := Matches(func(match *Item) bool {
-			for _, path := range detected {
-				if match.Path == path {
-					return true
-				}
-			}
-			return false
-		})
-
-		item.Dependencies = append(item.Dependencies, dependencies...)
+		item.Related = detected
 
 	}
 
@@ -60,14 +51,16 @@ func IndexDependencies() error {
 // IndexBundles creates and retrieve every possible bundle with current index
 func IndexBundles() error {
 
-	// First create a list of ignored dependencies
+	// First create a list of ignored files
 	// These files cannot have an exclusive bundle
 	// Because they are dependency of another main file
 	ignore := make(map[string]bool)
 
 	for _, item := range _items {
-		for _, dependency := range item.Dependencies {
-			ignore[dependency.Path] = true
+		for _, related := range item.Related {
+			if related.IsDependency() {
+				ignore[related.Item.Path] = true
+			}
 		}
 	}
 
@@ -81,9 +74,8 @@ func IndexBundles() error {
 
 		bundle := NewBundle()
 		bundle.Extension = item.Extension
+		bundle.Item = item
 		bundle.Destination.File = bundle.CleanPath(item.Path)
-		bundle.Items = append(bundle.Items, item)
-		bundle.Items = append(bundle.Items, item.Dependencies...)
 
 		if bundle.ShouldInclude(item.Path) {
 			AddBundle(bundle)
@@ -94,7 +86,7 @@ func IndexBundles() error {
 	return nil
 }
 
-// Index add path files to the index, resolve dependencies and create bundles
+// Index add path files to the index, resolve related and create bundles
 func Index(path string) error {
 
 	err := IndexItems(path)
@@ -103,7 +95,7 @@ func Index(path string) error {
 		return err
 	}
 
-	err = IndexDependencies()
+	err = IndexRelated()
 
 	if err != nil {
 		return err
@@ -123,13 +115,11 @@ func Process(bundle *Bundle) error {
 		return err
 	}
 
-	// Determine action based on processable file list
+	// Determine action based on processable file
 	action := "DELETE"
 
-	for _, item := range bundle.Items {
-		if item.Exists {
-			action = "EXECUTE"
-		}
+	if bundle.Item.Exists {
+		action = "EXECUTE"
 	}
 
 	// Find the appropriated plugin by detecting extension

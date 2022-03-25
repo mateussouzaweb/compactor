@@ -37,7 +37,7 @@ type SourceMap struct {
 	Exclude []string
 }
 
-// Compress struct
+// Progressive struct
 type Progressive struct {
 	Enabled bool
 	Include []string
@@ -51,18 +51,45 @@ type Logs struct {
 	Ignored   []string
 	Written   []string
 	Deleted   []string
+	Optimized []string
 }
 
 // Bundle struct
 type Bundle struct {
 	Extension   string
-	Items       []*Item
+	Item        *Item
 	Source      Source
 	Destination Destination
 	Compress    Compress
 	SourceMap   SourceMap
 	Progressive Progressive
 	Logs        Logs
+}
+
+// Permission return the most appropriated permission for the bundle
+func (b *Bundle) GetPermission() fs.FileMode {
+	return b.Item.Permission
+}
+
+// Content merge and return the content of the bundle files as final string
+func (b *Bundle) GetContent(includeImports bool) string {
+
+	content := ""
+	if b.Item.Exists {
+		content += b.Item.Content
+	}
+
+	if !includeImports {
+		return content
+	}
+
+	for _, related := range b.Item.Related {
+		if related.Type == "import" && related.Item.Exists {
+			content += "\n" + related.Item.Content
+		}
+	}
+
+	return content
 }
 
 // CleanPath return the clean file, without source and destination path
@@ -73,24 +100,6 @@ func (b *Bundle) CleanPath(file string) string {
 	file = strings.TrimLeft(file, "/")
 
 	return file
-}
-
-// Permission return the most appropriated permission for the bundle
-func (b *Bundle) GetPermission() fs.FileMode {
-	return b.Items[0].Permission
-}
-
-// Content merge and return the content of all bundle files as final string
-func (b *Bundle) GetContent() string {
-
-	content := ""
-	for _, item := range b.Items {
-		if item.Exists {
-			content += item.Content + "\n"
-		}
-	}
-
-	return content
 }
 
 // MatchPatterns return if file match one of the given patterns
@@ -260,4 +269,9 @@ func (b *Bundle) Written(path string) {
 // Deleted append path to deleted list
 func (b *Bundle) Deleted(path string) {
 	b.Logs.Deleted = append(b.Logs.Deleted, path)
+}
+
+// Optimized append path to optimized list
+func (b *Bundle) Optimized(path string) {
+	b.Logs.Optimized = append(b.Logs.Optimized, path)
 }

@@ -191,9 +191,12 @@ func GetBundle(path string) *Bundle {
 		if bundle.Destination.File == bundle.CleanPath(path) {
 			return bundle
 		}
+		if bundle.Item.Path == path {
+			return bundle
+		}
 
-		for _, item := range bundle.Items {
-			if item.Path == path {
+		for _, related := range bundle.Item.Related {
+			if related.IsDependency() && related.Item.Path == path {
 				return bundle
 			}
 		}
