@@ -176,13 +176,17 @@ func GetBundle(path string) *Bundle {
 
 	for _, bundle := range _bundles {
 
-		if bundle.Item.Path == path {
+		sourcePath := bundle.ToSource(path)
+
+		if bundle.Item.Path == path || bundle.Item.Path == sourcePath {
 			return bundle
 		}
 
 		for _, related := range bundle.Item.Related {
-			if related.IsDependency() && related.Item.Path == path {
-				return bundle
+			if related.IsDependency() {
+				if related.Item.Path == path || related.Item.Path == sourcePath {
+					return bundle
+				}
 			}
 		}
 
