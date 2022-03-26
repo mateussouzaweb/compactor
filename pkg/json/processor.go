@@ -22,9 +22,7 @@ func Minify(content string) (string, error) {
 // Optimize processor
 func Optimize(bundle *compactor.Bundle) error {
 
-	destination := bundle.ToDestination(bundle.Destination.File)
-
-	if !bundle.ShouldCompress(destination) {
+	if !bundle.ShouldCompress(bundle.Item.Path) {
 		return nil
 	}
 
@@ -35,23 +33,29 @@ func Optimize(bundle *compactor.Bundle) error {
 		return err
 	}
 
+	destination := bundle.ToDestination(bundle.Item.Path)
 	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
 
-	return err
+	if err != nil {
+		return err
+	}
 
+	bundle.Optimized(bundle.Item.Path)
+
+	return nil
 }
 
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "json",
-		Extensions:   []string{".json"},
-		Init:         generic.Init,
-		Dependencies: generic.Dependencies,
-		Execute:      generic.Execute,
-		Optimize:     Optimize,
-		Delete:       generic.Delete,
-		Resolve:      generic.Resolve,
+		Namespace:  "json",
+		Extensions: []string{".json"},
+		Init:       generic.Init,
+		Related:    generic.Related,
+		Execute:    generic.Execute,
+		Optimize:   Optimize,
+		Delete:     generic.Delete,
+		Resolve:    generic.Resolve,
 	}
 }

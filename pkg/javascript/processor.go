@@ -13,34 +13,33 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
-// Dependencies processor
-func Dependencies(item *compactor.Item) ([]string, error) {
-
-	// TODO: implement
-	// item.Content
-
-	return []string{}, nil
+// Related processor
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+	var found []compactor.Related
+	return found, nil
 }
 
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
-	hash, err := os.Checksum(content)
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
 
-	files := []string{}
+	files := []string{bundle.Item.Path}
 
-	for _, item := range bundle.Items {
-		if item.Exists {
-			files = append(files, item.Path)
+	for _, related := range bundle.Item.Related {
+		if related.Item.Exists && related.Type == "import" {
+			files = append(files, related.Item.Path)
+		}
+		if related.Item.Exists && related.Type == "require" {
+			files = append(files, related.Item.Path)
 		}
 	}
 
@@ -48,13 +47,13 @@ func Execute(bundle *compactor.Bundle) error {
 	args = append(args, files...)
 	args = append(args, "--output", destination)
 
-	if bundle.ShouldCompress(destination) {
+	if bundle.ShouldCompress(bundle.Item.Path) {
 		args = append(args, "--compress", "--comments")
 	} else {
 		args = append(args, "--beautify")
 	}
 
-	if bundle.ShouldGenerateSourceMap(destination) {
+	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
 		file := os.File(destination)
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
@@ -69,11 +68,17 @@ func Execute(bundle *compactor.Bundle) error {
 		args...,
 	)
 
-	if err == nil {
-		bundle.Written(destination)
+	if err != nil {
+		return err
 	}
 
-	return err
+	bundle.Written(destination)
+
+	if bundle.ShouldCompress(bundle.Item.Path) {
+		bundle.Optimized(bundle.Item.Path)
+	}
+
+	return nil
 }
 
 // Delete processor
@@ -113,9 +118,7 @@ func Resolve(path string) (string, error) {
 	}
 
 	bundle := compactor.GetBundle(path)
-	content := bundle.GetContent()
-
-	hash, err := os.Checksum(content)
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return destination, err
@@ -130,13 +133,13 @@ func Resolve(path string) (string, error) {
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "javascript",
-		Extensions:   []string{".js", ".mjs"},
-		Init:         Init,
-		Dependencies: Dependencies,
-		Execute:      Execute,
-		Optimize:     generic.Optimize,
-		Delete:       Delete,
-		Resolve:      Resolve,
+		Namespace:  "javascript",
+		Extensions: []string{".js", ".mjs"},
+		Init:       Init,
+		Related:    Related,
+		Execute:    Execute,
+		Optimize:   generic.Optimize,
+		Delete:     Delete,
+		Resolve:    Resolve,
 	}
 }

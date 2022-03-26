@@ -12,9 +12,10 @@ func Init(bundle *compactor.Bundle) error {
 	return nil
 }
 
-// Dependencies detect the dependencies of the file
-func Dependencies(item *compactor.Item) ([]string, error) {
-	return []string{}, nil
+// Related detect the dependencies of the file
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+	var found []compactor.Related
+	return found, nil
 }
 
 // Execute create generic copy of file(s) content to destination
@@ -23,7 +24,7 @@ func Execute(bundle *compactor.Bundle) error {
 	content := bundle.GetContent()
 	perm := bundle.GetPermission()
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	err := os.Write(destination, content, perm)
 
 	if err == nil {
@@ -43,25 +44,29 @@ func Delete(bundle *compactor.Bundle) error {
 
 	toDelete := []string{}
 
-	for _, item := range bundle.Items {
-
-		destination := bundle.ToDestination(item.Path)
-		hashed := bundle.ToHashed(destination, item.Checksum)
-		previous := bundle.ToHashed(destination, item.Previous)
-		toDelete = append(toDelete, destination, hashed, previous)
-
-	}
-
-	content := bundle.GetContent()
-	hash, err := os.Checksum(content)
+	// Content hashed name
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	// Item file name
+	destination := bundle.ToDestination(bundle.Item.Path)
 	hashed := bundle.ToHashed(destination, hash)
-	toDelete = append(toDelete, destination, hashed)
+	checksum := bundle.ToHashed(destination, bundle.Item.Checksum)
+	previous := bundle.ToHashed(destination, bundle.Item.Previous)
+	toDelete = append(toDelete, destination, hashed, checksum, previous)
+
+	// Related dependencies
+	for _, related := range bundle.Item.Related {
+		if related.IsDependency() {
+			destination := bundle.ToDestination(related.Item.Path)
+			hashed := bundle.ToHashed(destination, related.Item.Checksum)
+			previous := bundle.ToHashed(destination, related.Item.Previous)
+			toDelete = append(toDelete, destination, hashed, previous)
+		}
+	}
 
 	for _, file := range toDelete {
 
@@ -85,7 +90,7 @@ func Delete(bundle *compactor.Bundle) error {
 func Resolve(path string) (string, error) {
 
 	bundle := compactor.GetBundle(path)
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.CleanPath(destination)
 
 	if strings.HasPrefix(path, "/") {
@@ -98,13 +103,13 @@ func Resolve(path string) (string, error) {
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "generic",
-		Extensions:   []string{},
-		Init:         Init,
-		Dependencies: Dependencies,
-		Execute:      Execute,
-		Optimize:     Optimize,
-		Delete:       Delete,
-		Resolve:      Resolve,
+		Namespace:  "generic",
+		Extensions: []string{},
+		Init:       Init,
+		Related:    Related,
+		Execute:    Execute,
+		Optimize:   Optimize,
+		Delete:     Delete,
+		Resolve:    Resolve,
 	}
 }

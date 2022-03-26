@@ -22,22 +22,14 @@ func Init(bundle *compactor.Bundle) error {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	for _, item := range bundle.Items {
+	destination := bundle.ToDestination(bundle.Item.Path)
+	err := os.Copy(bundle.Item.Path, destination)
 
-		if !item.Exists {
-			continue
-		}
-
-		destination := bundle.ToDestination(item.Path)
-		err := os.Copy(item.Path, destination)
-
-		if err != nil {
-			return err
-		}
-
-		bundle.Processed(item.Path)
-
+	if err != nil {
+		return err
 	}
+
+	bundle.Processed(bundle.Item.Path)
 
 	return nil
 }
@@ -45,34 +37,30 @@ func Execute(bundle *compactor.Bundle) error {
 // Optimize processor
 func Optimize(bundle *compactor.Bundle) error {
 
-	for _, item := range bundle.Items {
+	if bundle.ShouldCompress(bundle.Item.Path) {
+		destination := bundle.ToDestination(bundle.Item.Path)
+		_, err := os.Exec(
+			"optipng",
+			"--quiet",
+			destination,
+		)
 
-		if !item.Exists {
-			continue
+		if err != nil {
+			return err
 		}
+	}
 
-		destination := bundle.ToDestination(item.Path)
+	if bundle.ShouldGenerateProgressive(bundle.Item.Path) {
+		destination := bundle.ToDestination(bundle.Item.Path)
+		err := webp.CreateCopy(bundle.Item.Path, destination, 75)
 
-		if bundle.ShouldCompress(item.Path) {
-			_, err := os.Exec(
-				"optipng",
-				"--quiet",
-				destination,
-			)
-
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
 		}
+	}
 
-		if bundle.ShouldGenerateProgressive(item.Path) {
-			err := webp.CreateCopy(item.Path, destination, 75)
-
-			if err != nil {
-				return err
-			}
-		}
-
+	if bundle.ShouldCompress(bundle.Item.Path) || bundle.ShouldGenerateProgressive(bundle.Item.Path) {
+		bundle.Optimized(bundle.Item.Path)
 	}
 
 	return nil
@@ -109,13 +97,13 @@ func Delete(bundle *compactor.Bundle) error {
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "png",
-		Extensions:   []string{".png"},
-		Init:         Init,
-		Dependencies: generic.Dependencies,
-		Execute:      Execute,
-		Optimize:     Optimize,
-		Delete:       Delete,
-		Resolve:      generic.Resolve,
+		Namespace:  "png",
+		Extensions: []string{".png"},
+		Init:       Init,
+		Related:    generic.Related,
+		Execute:    Execute,
+		Optimize:   Optimize,
+		Delete:     Delete,
+		Resolve:    generic.Resolve,
 	}
 }

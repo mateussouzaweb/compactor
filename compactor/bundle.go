@@ -19,7 +19,6 @@ type Source struct {
 // Destination struct
 type Destination struct {
 	Path   string
-	File   string
 	Hashed bool
 }
 
@@ -72,16 +71,15 @@ func (b *Bundle) GetPermission() fs.FileMode {
 }
 
 // Content merge and return the content of the bundle files as final string
-func (b *Bundle) GetContent(includeImports bool) string {
+func (b *Bundle) GetContent() string {
 
 	content := ""
-	if b.Item.Exists {
-		content += b.Item.Content
-	}
 
-	if !includeImports {
+	if !b.Item.Exists {
 		return content
 	}
+
+	content += b.Item.Content
 
 	for _, related := range b.Item.Related {
 		if related.Type == "import" && related.Item.Exists {
@@ -90,6 +88,19 @@ func (b *Bundle) GetContent(includeImports bool) string {
 	}
 
 	return content
+}
+
+// GetChecksum retrive the checksum of the merged bundle content
+func (b *Bundle) GetChecksum() (string, error) {
+
+	content := b.GetContent()
+	hash, err := os.Checksum(content)
+
+	if err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }
 
 // CleanPath return the clean file, without source and destination path
@@ -195,16 +206,7 @@ func (b *Bundle) ToSource(file string) string {
 
 // ToDestination transform and return the full destination path for file
 func (b *Bundle) ToDestination(file string) string {
-
-	// Force the custom defined destination
-	if b.Destination.File != "" || file == "" {
-		file = b.Destination.File
-	}
-
-	return filepath.Join(
-		b.Destination.Path,
-		b.CleanPath(file),
-	)
+	return filepath.Join(b.Destination.Path, b.CleanPath(file))
 }
 
 // ToExtension return a file converted to a specific extension

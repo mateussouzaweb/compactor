@@ -15,32 +15,32 @@ func Init(bundle *compactor.Bundle) error {
 func Execute(bundle *compactor.Bundle) error {
 
 	content := bundle.GetContent()
-	hash, err := os.Checksum(content)
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".css")
 
 	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
 
-	if err == nil {
-		bundle.Processed(destination)
+	if err != nil {
+		return err
 	}
 
 	args := []string{
 		destination + ":" + destination,
 	}
 
-	if bundle.ShouldCompress(destination) {
+	if bundle.ShouldCompress(bundle.Item.Path) {
 		args = append(args, "--style", "compressed")
 	}
 
-	if bundle.ShouldGenerateSourceMap(destination) {
+	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
@@ -49,7 +49,17 @@ func Execute(bundle *compactor.Bundle) error {
 		args...,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	bundle.Processed(destination)
+
+	if bundle.ShouldCompress(bundle.Item.Path) {
+		bundle.Processed(bundle.Item.Path)
+	}
+
+	return nil
 }
 
 // Delete processor
@@ -89,9 +99,7 @@ func Resolve(path string) (string, error) {
 	}
 
 	bundle := compactor.GetBundle(path)
-	content := bundle.GetContent()
-
-	hash, err := os.Checksum(content)
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return destination, err
@@ -106,13 +114,13 @@ func Resolve(path string) (string, error) {
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "css",
-		Extensions:   []string{".css"},
-		Init:         Init,
-		Dependencies: generic.Dependencies,
-		Execute:      Execute,
-		Optimize:     generic.Optimize,
-		Delete:       Delete,
-		Resolve:      Resolve,
+		Namespace:  "css",
+		Extensions: []string{".css"},
+		Init:       Init,
+		Related:    generic.Related,
+		Execute:    Execute,
+		Optimize:   generic.Optimize,
+		Delete:     Delete,
+		Resolve:    Resolve,
 	}
 }

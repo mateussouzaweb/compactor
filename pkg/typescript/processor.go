@@ -32,13 +32,10 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
-// Dependencies processor
-func Dependencies(item *compactor.Item) ([]string, error) {
-
-	// TODO: implement
-	// item.Content
-
-	return []string{}, nil
+// Related processor
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+	var found []compactor.Related
+	return found, nil
 }
 
 // Find user defined TypeScript config file
@@ -99,22 +96,24 @@ func RenameDestination(from string, to string) error {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
-	hash, err := os.Checksum(content)
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
 
-	files := []string{}
+	files := []string{bundle.Item.Path}
 
-	for _, item := range bundle.Items {
-		if item.Exists {
-			files = append(files, bundle.ToSource(item.Path))
+	for _, related := range bundle.Item.Related {
+		if related.Item.Exists && related.Type == "import" {
+			files = append(files, related.Item.Path)
+		}
+		if related.Item.Exists && related.Type == "require" {
+			files = append(files, related.Item.Path)
 		}
 	}
 
@@ -133,12 +132,13 @@ func Execute(bundle *compactor.Bundle) error {
 	config.CompilerOptions["emitDeclarationOnly"] = false
 	config.CompilerOptions["noEmit"] = false
 
-	if bundle.ShouldGenerateSourceMap(destination) {
+	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
 		config.CompilerOptions["sourceMap"] = true
 		config.CompilerOptions["inlineSources"] = true
 	}
 
 	configJson, err := json.Marshal(config)
+
 	if err != nil {
 		return err
 	}
@@ -147,6 +147,7 @@ func Execute(bundle *compactor.Bundle) error {
 	defer os.Delete(configFile)
 
 	err = os.Write(configFile, string(configJson), 0775)
+
 	if err != nil {
 		return err
 	}
@@ -185,20 +186,19 @@ func Execute(bundle *compactor.Bundle) error {
 // Optimize processor
 func Optimize(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
-	hash, err := os.Checksum(content)
+	if !bundle.ShouldCompress(bundle.Item.Path) {
+		return nil
+	}
+
+	hash, err := bundle.GetChecksum()
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
-
-	if !bundle.ShouldCompress(destination) {
-		return nil
-	}
 
 	args := []string{
 		destination,
@@ -207,7 +207,7 @@ func Optimize(bundle *compactor.Bundle) error {
 		"--comments",
 	}
 
-	if bundle.ShouldGenerateSourceMap(destination) {
+	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
 
 		file := os.File(destination)
 		sourceOptions := strings.Join([]string{
@@ -226,19 +226,21 @@ func Optimize(bundle *compactor.Bundle) error {
 		args...,
 	)
 
+	bundle.Optimized(bundle.Item.Path)
+
 	return err
 }
 
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "typescript",
-		Extensions:   []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
-		Init:         Init,
-		Dependencies: Dependencies,
-		Execute:      Execute,
-		Optimize:     Optimize,
-		Delete:       javascript.Delete,
-		Resolve:      javascript.Resolve,
+		Namespace:  "typescript",
+		Extensions: []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
+		Init:       Init,
+		Related:    Related,
+		Execute:    Execute,
+		Optimize:   Optimize,
+		Delete:     javascript.Delete,
+		Resolve:    javascript.Resolve,
 	}
 }

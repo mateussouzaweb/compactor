@@ -166,18 +166,6 @@ func GetPlugin(extension string) *Plugin {
 	return &Plugin{}
 }
 
-// NewBundle create and retrieve a new bundle
-func NewBundle() *Bundle {
-
-	bundle := *Default
-	bundle.Extension = ""
-	bundle.Destination.File = ""
-	bundle.Destination.Path = Default.Destination.Path
-	bundle.Destination.Hashed = Default.Destination.Hashed
-
-	return &bundle
-}
-
 // AddBundle add a new bundle to the index
 func AddBundle(bundle *Bundle) {
 	_bundles = append(_bundles, bundle)
@@ -188,9 +176,6 @@ func GetBundle(path string) *Bundle {
 
 	for _, bundle := range _bundles {
 
-		if bundle.Destination.File == bundle.CleanPath(path) {
-			return bundle
-		}
 		if bundle.Item.Path == path {
 			return bundle
 		}

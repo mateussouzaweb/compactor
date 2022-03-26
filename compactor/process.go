@@ -72,13 +72,12 @@ func IndexBundles() error {
 			continue
 		}
 
-		bundle := NewBundle()
+		bundle := *Default
 		bundle.Extension = item.Extension
 		bundle.Item = item
-		bundle.Destination.File = bundle.CleanPath(item.Path)
 
 		if bundle.ShouldInclude(item.Path) {
-			AddBundle(bundle)
+			AddBundle(&bundle)
 		}
 
 	}
@@ -108,7 +107,7 @@ func Index(path string) error {
 func Process(bundle *Bundle) error {
 
 	// Make sure folder exists to avoid issues
-	destination := bundle.ToDestination(bundle.Destination.File)
+	destination := bundle.ToDestination(bundle.Item.Path)
 	err := os.EnsureDirectory(destination)
 
 	if err != nil {

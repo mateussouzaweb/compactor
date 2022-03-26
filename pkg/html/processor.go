@@ -160,34 +160,27 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Destination.File)
-
-	if bundle.ShouldCompress(destination) {
-		content, err = Minify(content)
-		if err != nil {
-			return err
-		}
-	}
-
+	destination := bundle.ToDestination(bundle.Item.Path)
 	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
 
-	if err == nil {
-		bundle.Written(destination)
+	if err != nil {
+		return err
 	}
 
-	return err
+	bundle.Processed(destination)
+
+	return nil
 }
 
 // Optimize processor
 func Optimize(bundle *compactor.Bundle) error {
 
-	destination := bundle.ToDestination(bundle.Destination.File)
-
-	if !bundle.ShouldCompress(destination) {
+	if !bundle.ShouldCompress(bundle.Item.Path) {
 		return nil
 	}
 
+	destination := bundle.ToDestination(bundle.Item.Path)
 	content, err := os.Read(destination)
 
 	if err != nil {
@@ -203,19 +196,25 @@ func Optimize(bundle *compactor.Bundle) error {
 	perm := bundle.GetPermission()
 	err = os.Write(destination, content, perm)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	bundle.Optimized(bundle.Item.Path)
+
+	return nil
 }
 
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
-		Namespace:    "html",
-		Extensions:   []string{".html", ".htm"},
-		Init:         Init,
-		Dependencies: generic.Dependencies,
-		Execute:      Execute,
-		Optimize:     Optimize,
-		Delete:       generic.Delete,
-		Resolve:      generic.Resolve,
+		Namespace:  "html",
+		Extensions: []string{".html", ".htm"},
+		Init:       Init,
+		Related:    generic.Related,
+		Execute:    Execute,
+		Optimize:   Optimize,
+		Delete:     generic.Delete,
+		Resolve:    generic.Resolve,
 	}
 }
