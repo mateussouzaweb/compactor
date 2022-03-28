@@ -115,7 +115,7 @@ func Execute(bundle *compactor.Bundle) error {
 		References:      make([]string, 0),
 	}
 
-	config.CompilerOptions["outDir"] = os.Dir(destination)
+	config.CompilerOptions["outDir"] = bundle.Destination.Path
 	config.CompilerOptions["removeComments"] = true
 	config.CompilerOptions["skipLibCheck"] = true
 	config.CompilerOptions["emitDeclarationOnly"] = false
@@ -205,7 +205,7 @@ func Optimize(bundle *compactor.Bundle) error {
 
 	}
 
-	_, err = os.Exec(
+	_, err := os.Exec(
 		"terser",
 		args...,
 	)
