@@ -21,8 +21,9 @@ type Item struct {
 // import, export, require, source-map, declaration,
 // link, alternative and other
 type Related struct {
-	Type string
-	Item *Item
+	Type   string
+	Source string
+	Item   *Item
 }
 
 // IsDependency determines if the related asset is a dependency.

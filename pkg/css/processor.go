@@ -1,6 +1,9 @@
 package css
 
 import (
+	"path/filepath"
+	"regexp"
+
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
@@ -9,6 +12,32 @@ import (
 // Init processor
 func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("sass", "sass")
+}
+
+// Related processor
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+
+	var found []compactor.Related
+
+	pattern := regexp.MustCompile("@import \"(.+)\";?")
+	matches := pattern.FindAllStringSubmatch(item.Content, -1)
+
+	for _, match := range matches {
+		source := match[0]
+		file := filepath.Join(os.Dir(item.Path), match[1])
+
+		if os.Extension(file) == "" {
+			file += item.Extension
+		}
+
+		found = append(found, compactor.Related{
+			Type:   "import",
+			Source: source,
+			Item:   compactor.Get(file),
+		})
+	}
+
+	return found, nil
 }
 
 // Execute processor
@@ -117,7 +146,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "css",
 		Extensions: []string{".css"},
 		Init:       Init,
-		Related:    generic.Related,
+		Related:    Related,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
 		Delete:     Delete,

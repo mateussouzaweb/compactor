@@ -12,12 +12,6 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("sass", "sass")
 }
 
-// Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
-	var found []compactor.Related
-	return found, nil
-}
-
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
@@ -67,7 +61,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "sass",
 		Extensions: []string{".sass", ".scss", ".css"},
 		Init:       Init,
-		Related:    Related,
+		Related:    css.Related,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
 		Delete:     css.Delete,
