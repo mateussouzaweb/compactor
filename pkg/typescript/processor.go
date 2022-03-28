@@ -178,7 +178,7 @@ func Execute(bundle *compactor.Bundle) error {
 		}
 	}
 
-	bundle.Processed(destination)
+	bundle.Processed(bundle.Item.Path)
 
 	return nil
 }
