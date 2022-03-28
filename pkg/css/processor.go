@@ -27,19 +27,15 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return err
-	}
+	content := bundle.Item.Content
+	hash := bundle.Item.Checksum
 
 	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".css")
 
-	perm := bundle.GetPermission()
-	err = os.Write(destination, content, perm)
+	perm := bundle.Item.Permission
+	err := os.Write(destination, content, perm)
 
 	if err != nil {
 		return err
@@ -112,11 +108,7 @@ func Resolve(path string) (string, error) {
 	}
 
 	bundle := compactor.GetBundle(path)
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return destination, err
-	}
+	hash := bundle.Item.Checksum
 
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".css")

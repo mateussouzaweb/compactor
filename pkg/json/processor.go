@@ -26,7 +26,7 @@ func Optimize(bundle *compactor.Bundle) error {
 		return nil
 	}
 
-	content := bundle.GetContent()
+	content := bundle.Item.Content
 	content, err := Minify(content)
 
 	if err != nil {
@@ -34,7 +34,7 @@ func Optimize(bundle *compactor.Bundle) error {
 	}
 
 	destination := bundle.ToDestination(bundle.Item.Path)
-	perm := bundle.GetPermission()
+	perm := bundle.Item.Permission
 	err = os.Write(destination, content, perm)
 
 	if err != nil {

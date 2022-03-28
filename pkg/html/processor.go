@@ -166,7 +166,7 @@ func Format(content string) (string, error) {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
+	content := bundle.Item.MergedContent()
 	content, err := Format(content)
 
 	if err != nil {
@@ -174,7 +174,7 @@ func Execute(bundle *compactor.Bundle) error {
 	}
 
 	destination := bundle.ToDestination(bundle.Item.Path)
-	perm := bundle.GetPermission()
+	perm := bundle.Item.Permission
 	err = os.Write(destination, content, perm)
 
 	if err != nil {
@@ -206,7 +206,7 @@ func Optimize(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	perm := bundle.GetPermission()
+	perm := bundle.Item.Permission
 	err = os.Write(destination, content, perm)
 
 	if err != nil {

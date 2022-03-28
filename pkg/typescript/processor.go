@@ -90,12 +90,7 @@ func RenameDestination(from string, to string) error {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return err
-	}
-
+	hash := bundle.Item.Checksum
 	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
@@ -184,12 +179,7 @@ func Optimize(bundle *compactor.Bundle) error {
 		return nil
 	}
 
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return err
-	}
-
+	hash := bundle.Item.Checksum
 	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")

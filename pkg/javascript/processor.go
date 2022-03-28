@@ -34,12 +34,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return err
-	}
-
+	hash := bundle.Item.Checksum
 	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")
@@ -75,7 +70,7 @@ func Execute(bundle *compactor.Bundle) error {
 		}, ","))
 	}
 
-	_, err = os.Exec(
+	_, err := os.Exec(
 		"terser",
 		args...,
 	)
@@ -130,11 +125,7 @@ func Resolve(path string) (string, error) {
 	}
 
 	bundle := compactor.GetBundle(path)
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return destination, err
-	}
+	hash := bundle.Item.Checksum
 
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".js")

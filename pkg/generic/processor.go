@@ -60,8 +60,8 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Execute create generic copy of file(s) content to destination
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.GetContent()
-	perm := bundle.GetPermission()
+	content := bundle.Item.Content
+	perm := bundle.Item.Permission
 
 	destination := bundle.ToDestination(bundle.Item.Path)
 	err := os.Write(destination, content, perm)
@@ -83,19 +83,11 @@ func Delete(bundle *compactor.Bundle) error {
 
 	toDelete := []string{}
 
-	// Content hashed name
-	hash, err := bundle.GetChecksum()
-
-	if err != nil {
-		return err
-	}
-
 	// Item file name
 	destination := bundle.ToDestination(bundle.Item.Path)
-	hashed := bundle.ToHashed(destination, hash)
 	checksum := bundle.ToHashed(destination, bundle.Item.Checksum)
 	previous := bundle.ToHashed(destination, bundle.Item.Previous)
-	toDelete = append(toDelete, destination, hashed, checksum, previous)
+	toDelete = append(toDelete, destination, checksum, previous)
 
 	// Related dependencies
 	for _, related := range bundle.Item.Related {

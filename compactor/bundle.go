@@ -1,7 +1,6 @@
 package compactor
 
 import (
-	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -63,29 +62,6 @@ type Bundle struct {
 	SourceMap   SourceMap
 	Progressive Progressive
 	Logs        Logs
-}
-
-// Permission return the most appropriated permission for the bundle
-func (b *Bundle) GetPermission() fs.FileMode {
-	return b.Item.Permission
-}
-
-// Content merge and return the content of the bundle files as final string
-func (b *Bundle) GetContent() string {
-	return b.Item.MergedContent()
-}
-
-// GetChecksum retrive the checksum of the merged bundle content
-func (b *Bundle) GetChecksum() (string, error) {
-
-	content := b.GetContent()
-	hash, err := os.Checksum(content)
-
-	if err != nil {
-		return "", err
-	}
-
-	return hash, nil
 }
 
 // CleanPath return the clean file, without source and destination path
