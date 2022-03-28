@@ -51,6 +51,7 @@ func (i *Item) MergedContent() string {
 type Related struct {
 	Type   string
 	Source string
+	Path   string
 	Item   *Item
 }
 

@@ -1,11 +1,50 @@
 package generic
 
 import (
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 )
+
+type FindPattern struct {
+	Type     string
+	Regex    string
+	SubMatch int
+}
+
+func FindRelated(item *compactor.Item, patterns []FindPattern) ([]compactor.Related, error) {
+
+	var found []compactor.Related
+
+	for _, pattern := range patterns {
+
+		regex := regexp.MustCompile(pattern.Regex)
+		matches := regex.FindAllStringSubmatch(item.Content, -1)
+
+		for _, match := range matches {
+			source := match[0]
+			path := match[pattern.SubMatch]
+			file := filepath.Join(os.Dir(item.Path), path)
+
+			if os.Extension(file) == "" {
+				file += item.Extension
+			}
+
+			found = append(found, compactor.Related{
+				Type:   pattern.Type,
+				Source: source,
+				Path:   path,
+				Item:   compactor.Get(file),
+			})
+		}
+
+	}
+
+	return found, nil
+}
 
 // Init processor
 func Init(bundle *compactor.Bundle) error {

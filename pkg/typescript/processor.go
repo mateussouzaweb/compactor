@@ -32,12 +32,6 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
-// Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
-	var found []compactor.Related
-	return found, nil
-}
-
 // Find user defined TypeScript config file
 func FindConfig(path string) string {
 
@@ -237,7 +231,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "typescript",
 		Extensions: []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
 		Init:       Init,
-		Related:    Related,
+		Related:    javascript.Related,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     javascript.Delete,

@@ -15,8 +15,20 @@ func Init(bundle *compactor.Bundle) error {
 
 // Related processor
 func Related(item *compactor.Item) ([]compactor.Related, error) {
-	var found []compactor.Related
-	return found, nil
+
+	var patterns []generic.FindPattern
+	patterns = append(patterns, generic.FindPattern{
+		Type:     "import",
+		Regex:    "import (.+) from \"(.+)\";?",
+		SubMatch: 2,
+	})
+	patterns = append(patterns, generic.FindPattern{
+		Type:     "require",
+		Regex:    "require\\(\"(.+)\"\\);?",
+		SubMatch: 1,
+	})
+
+	return generic.FindRelated(item, patterns)
 }
 
 // Execute processor

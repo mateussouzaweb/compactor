@@ -16,6 +16,19 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("html-minifier", "html-minifier")
 }
 
+// Related processor
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+
+	var patterns []generic.FindPattern
+	patterns = append(patterns, generic.FindPattern{
+		Type:     "partial",
+		Regex:    "<!-- @include \"(.+)\" -->",
+		SubMatch: 1,
+	})
+
+	return generic.FindRelated(item, patterns)
+}
+
 // Minify HTML content
 func Minify(content string) (string, error) {
 
@@ -211,7 +224,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "html",
 		Extensions: []string{".html", ".htm"},
 		Init:       Init,
-		Related:    generic.Related,
+		Related:    Related,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     generic.Delete,
