@@ -1,6 +1,9 @@
 package compactor
 
-import "io/fs"
+import (
+	"io/fs"
+	"strings"
+)
 
 // Item struct
 type Item struct {
@@ -17,9 +20,34 @@ type Item struct {
 	Related    []Related
 }
 
+// MergedContent returns the content of the item with the replaced partials dependencies
+func (i *Item) MergedContent() string {
+
+	if !i.Exists {
+		return ""
+	}
+
+	content := i.Content
+
+	for _, related := range i.Related {
+		if related.Type == "partial" && related.Item.Exists {
+
+			// Solves recursively
+			content = strings.Replace(
+				content,
+				related.Source,
+				related.Item.MergedContent(),
+				1,
+			)
+
+		}
+	}
+
+	return content
+}
+
 // Related struct. Valid types:
-// import, export, require, source-map, declaration,
-// link, alternative and other
+// import, export, require, partial, source-map, declaration, link, alternative and other
 type Related struct {
 	Type   string
 	Source string
@@ -30,6 +58,9 @@ type Related struct {
 // Dependencies should be carried with the main file
 func (r *Related) IsDependency() bool {
 	if r.Type == "import" {
+		return true
+	}
+	if r.Type == "partial" {
 		return true
 	}
 	if r.Type == "source-map" {

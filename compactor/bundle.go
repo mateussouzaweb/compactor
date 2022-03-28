@@ -72,22 +72,7 @@ func (b *Bundle) GetPermission() fs.FileMode {
 
 // Content merge and return the content of the bundle files as final string
 func (b *Bundle) GetContent() string {
-
-	content := ""
-
-	if !b.Item.Exists {
-		return content
-	}
-
-	content += b.Item.Content
-
-	for _, related := range b.Item.Related {
-		if related.Type == "import" && related.Item.Exists {
-			content += "\n" + related.Item.Content
-		}
-	}
-
-	return content
+	return b.Item.MergedContent()
 }
 
 // GetChecksum retrive the checksum of the merged bundle content
