@@ -33,6 +33,16 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 		Item:       compactor.Get(file),
 	})
 
+	// Add possible type declaration
+	file = item.Path + ".d"
+	related = append(related, compactor.Related{
+		Type:       "declaration",
+		Dependency: true,
+		Source:     "",
+		Path:       os.File(file),
+		Item:       compactor.Get(file),
+	})
+
 	// Detect imports
 	regex := regexp.MustCompile(`import (.+) from "(.+)";?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
