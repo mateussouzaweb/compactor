@@ -41,30 +41,14 @@ func process(bundle *compactor.Bundle) error {
 	end := time.Now().UnixNano() / int64(time.Millisecond)
 	processTime := end - start
 
+	file := bundle.CleanPath(bundle.Item.Path)
+
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %#s - %dms \n", bundle.Destination, processTime)
-		os.Printf(os.Fatal, "%v\n", err)
+		os.Printf(os.Fatal, "[ERROR] %s - %dms\n%v\n", file, processTime, err)
 		return err
 	}
 
-	for _, f := range bundle.Logs.Processed {
-		os.Printf(os.Success, "[PROCESSED] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
-	for _, f := range bundle.Logs.Skipped {
-		os.Printf(os.Warn, "[SKIPPED] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
-	for _, f := range bundle.Logs.Ignored {
-		os.Printf(os.Warn, "[IGNORED] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
-	for _, f := range bundle.Logs.Written {
-		os.Printf(os.Success, "[WRITTEN] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
-	for _, f := range bundle.Logs.Deleted {
-		os.Printf(os.Warn, "[DELETED] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
-	for _, f := range bundle.Logs.Optimized {
-		os.Printf(os.Success, "[OPTIMIZED] %s - %dms \n", bundle.CleanPath(f), processTime)
-	}
+	os.Printf(os.Success, "[PROCESSED] %s - %dms\n", file, processTime)
 
 	return nil
 }

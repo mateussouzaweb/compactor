@@ -41,12 +41,6 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	bundle.Processed(bundle.Item.Path)
-
-	if bundle.ShouldCompress(bundle.Item.Path) {
-		bundle.Optimized(bundle.Item.Path)
-	}
-
 	return nil
 }
 

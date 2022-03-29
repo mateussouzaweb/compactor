@@ -36,8 +36,6 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	bundle.Processed(bundle.Item.Path)
-
 	return nil
 }
 

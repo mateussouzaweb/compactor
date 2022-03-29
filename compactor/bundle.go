@@ -42,16 +42,6 @@ type Progressive struct {
 	Exclude []string
 }
 
-// Logs struct
-type Logs struct {
-	Processed []string
-	Skipped   []string
-	Ignored   []string
-	Written   []string
-	Deleted   []string
-	Optimized []string
-}
-
 // Bundle struct
 type Bundle struct {
 	Extension   string
@@ -61,7 +51,6 @@ type Bundle struct {
 	Compress    Compress
 	SourceMap   SourceMap
 	Progressive Progressive
-	Logs        Logs
 }
 
 // CleanPath return the clean file, without source and destination path
@@ -207,34 +196,4 @@ func (b *Bundle) ToNonHashed(file string, hash string) string {
 	file = file + extension
 
 	return file
-}
-
-// Processed append path to processed list
-func (b *Bundle) Processed(path string) {
-	b.Logs.Processed = append(b.Logs.Processed, path)
-}
-
-// Skipped append path to skipped list
-func (b *Bundle) Skipped(path string) {
-	b.Logs.Skipped = append(b.Logs.Skipped, path)
-}
-
-// Ignored append path to ignored list
-func (b *Bundle) Ignored(path string) {
-	b.Logs.Ignored = append(b.Logs.Ignored, path)
-}
-
-// Written append path to written list
-func (b *Bundle) Written(path string) {
-	b.Logs.Written = append(b.Logs.Written, path)
-}
-
-// Deleted append path to deleted list
-func (b *Bundle) Deleted(path string) {
-	b.Logs.Deleted = append(b.Logs.Deleted, path)
-}
-
-// Optimized append path to optimized list
-func (b *Bundle) Optimized(path string) {
-	b.Logs.Optimized = append(b.Logs.Optimized, path)
 }

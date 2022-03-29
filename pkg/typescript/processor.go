@@ -123,8 +123,6 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	bundle.Processed(bundle.Item.Path)
-
 	return nil
 }
 
@@ -165,8 +163,6 @@ func Optimize(bundle *compactor.Bundle) error {
 		"terser",
 		args...,
 	)
-
-	bundle.Optimized(bundle.Item.Path)
 
 	return err
 }

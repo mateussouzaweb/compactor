@@ -29,8 +29,6 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	bundle.Processed(bundle.Item.Path)
-
 	return nil
 }
 
@@ -57,10 +55,6 @@ func Optimize(bundle *compactor.Bundle) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	if bundle.ShouldCompress(bundle.Item.Path) || bundle.ShouldGenerateProgressive(bundle.Item.Path) {
-		bundle.Optimized(bundle.Item.Path)
 	}
 
 	return nil

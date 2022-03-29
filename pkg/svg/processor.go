@@ -71,8 +71,6 @@ func Optimize(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	bundle.Optimized(bundle.Item.Path)
-
 	return nil
 }
 

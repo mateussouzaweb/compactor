@@ -66,11 +66,11 @@ func Execute(bundle *compactor.Bundle) error {
 	destination := bundle.ToDestination(bundle.Item.Path)
 	err := os.Write(destination, content, perm)
 
-	if err == nil {
-		bundle.Written(destination)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // Optimize apply optimizations into the destination file
@@ -106,11 +106,10 @@ func Delete(bundle *compactor.Bundle) error {
 		}
 
 		err := os.Delete(file)
+
 		if err != nil {
 			return err
 		}
-
-		bundle.Deleted(file)
 
 	}
 
