@@ -1,50 +1,11 @@
 package generic
 
 import (
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 )
-
-type FindPattern struct {
-	Type     string
-	Regex    string
-	SubMatch int
-}
-
-func FindRelated(item *compactor.Item, patterns []FindPattern) ([]compactor.Related, error) {
-
-	var found []compactor.Related
-
-	for _, pattern := range patterns {
-
-		regex := regexp.MustCompile(pattern.Regex)
-		matches := regex.FindAllStringSubmatch(item.Content, -1)
-
-		for _, match := range matches {
-			source := match[0]
-			path := match[pattern.SubMatch]
-			file := filepath.Join(os.Dir(item.Path), path)
-
-			if os.Extension(file) == "" {
-				file += item.Extension
-			}
-
-			found = append(found, compactor.Related{
-				Type:   pattern.Type,
-				Source: source,
-				Path:   path,
-				Item:   compactor.Get(file),
-			})
-		}
-
-	}
-
-	return found, nil
-}
 
 // Init processor
 func Init(bundle *compactor.Bundle) error {
@@ -92,10 +53,21 @@ func Delete(bundle *compactor.Bundle) error {
 	// Related dependencies
 	for _, related := range bundle.Item.Related {
 		if related.IsDependency() {
+
+			// Variation from related item path
 			destination := bundle.ToDestination(related.Item.Path)
+			toDelete = append(toDelete, destination)
+
+			// Variations from related item checksum
 			hashed := bundle.ToHashed(destination, related.Item.Checksum)
 			previous := bundle.ToHashed(destination, related.Item.Previous)
 			toDelete = append(toDelete, destination, hashed, previous)
+
+			// Variations from bundle item checksum
+			hashedFromItem := bundle.ToHashed(destination, bundle.Item.Checksum)
+			previousFromItem := bundle.ToHashed(destination, bundle.Item.Previous)
+			toDelete = append(toDelete, hashedFromItem, previousFromItem)
+
 		}
 	}
 

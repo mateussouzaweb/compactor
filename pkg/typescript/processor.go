@@ -7,6 +7,7 @@ import (
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
+	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
 )
 
@@ -176,7 +177,7 @@ func Plugin() *compactor.Plugin {
 		Related:    javascript.Related,
 		Execute:    Execute,
 		Optimize:   Optimize,
-		Delete:     javascript.Delete,
+		Delete:     generic.Delete,
 		Resolve:    javascript.Resolve,
 	}
 }

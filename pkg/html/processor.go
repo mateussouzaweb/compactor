@@ -1,6 +1,7 @@
 package html
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -16,17 +17,110 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("html-minifier", "html-minifier")
 }
 
+// ExtractAttribute find the value of the attribute
+func ExtractAttribute(html string, attribute string, defaultValue string) string {
+
+	regex := regexp.MustCompile(attribute + `="([^"]*)"`)
+	match := regex.FindStringSubmatch(html)
+
+	if match != nil {
+		return match[1]
+	}
+
+	regex = regexp.MustCompile(attribute + `='([^']*)'`)
+	match = regex.FindStringSubmatch(html)
+
+	if match != nil {
+		return match[1]
+	}
+
+	return defaultValue
+}
+
 // Related processor
 func Related(item *compactor.Item) ([]compactor.Related, error) {
 
-	var patterns []generic.FindPattern
-	patterns = append(patterns, generic.FindPattern{
-		Type:     "partial",
-		Regex:    "<!-- @include \"(.+)\" -->",
-		SubMatch: 1,
-	})
+	var related []compactor.Related
 
-	return generic.FindRelated(item, patterns)
+	// Detect imports
+	regex := regexp.MustCompile(`<!-- @import "(.+)" -->`)
+	matches := regex.FindAllStringSubmatch(item.Content, -1)
+
+	for _, match := range matches {
+		source := match[0]
+		path := match[1]
+		file := filepath.Join(os.Dir(item.Path), path)
+
+		if os.Extension(file) == "" {
+			file += item.Extension
+		}
+
+		related = append(related, compactor.Related{
+			Type:   "partial",
+			Source: source,
+			Path:   path,
+			Item:   compactor.Get(file),
+		})
+	}
+
+	// Detect scripts
+	regex = regexp.MustCompile(`(?i)<script(.+)?>(.+)?</script>`)
+	matches = regex.FindAllStringSubmatch(item.Content, -1)
+
+	for _, match := range matches {
+
+		code := match[0]
+		src := ExtractAttribute(code, "src", "")
+
+		// Ignore if is not a src script
+		if src == "" {
+			continue
+		}
+
+		// Ignore protocol scripts, only handle relative and absolute paths
+		if strings.Contains(src, "://") {
+			continue
+		}
+
+		file := filepath.Join(os.Dir(item.Path), src)
+		related = append(related, compactor.Related{
+			Type:   "other",
+			Source: code,
+			Path:   src,
+			Item:   compactor.Get(file),
+		})
+
+	}
+
+	// Detect links
+	regex = regexp.MustCompile(`(?i)<link(.+)?\/?>`)
+	matches = regex.FindAllStringSubmatch(item.Content, -1)
+
+	for _, match := range matches {
+
+		code := match[0]
+		rel := ExtractAttribute(code, "rel", "")
+		href := ExtractAttribute(code, "href", "")
+		as := ExtractAttribute(code, "as", "")
+
+		if rel == "" || href == "" {
+			continue
+		}
+		if rel != "stylesheet" && (rel == "preload" && as == "") {
+			continue
+		}
+
+		file := filepath.Join(os.Dir(item.Path), href)
+		related = append(related, compactor.Related{
+			Type:   "other",
+			Source: code,
+			Path:   href,
+			Item:   compactor.Get(file),
+		})
+
+	}
+
+	return related, nil
 }
 
 // Minify HTML content
@@ -66,103 +160,6 @@ func Minify(content string) (string, error) {
 	return content, err
 }
 
-// ExtractAttribute find the value of the attribute
-func ExtractAttribute(html string, attribute string, defaultValue string) string {
-
-	regex := regexp.MustCompile(attribute + `="([^"]*)"`)
-	match := regex.FindStringSubmatch(html)
-
-	if match != nil {
-		return match[1]
-	}
-
-	regex = regexp.MustCompile(attribute + `='([^']*)'`)
-	match = regex.FindStringSubmatch(html)
-
-	if match != nil {
-		return match[1]
-	}
-
-	return defaultValue
-}
-
-// Format HTML method
-func Format(content string) (string, error) {
-
-	var err error
-	var file string
-
-	script := `(?i)<script(.+)?>(.+)?</script>`
-	regex := regexp.MustCompile(script)
-	matches := regex.FindAllStringSubmatch(content, -1)
-
-	for _, match := range matches {
-
-		code := match[0]
-		src := ExtractAttribute(code, "src", "")
-
-		// Ignore if is not a src script
-		if src == "" {
-			continue
-		}
-
-		// Ignore protocol scripts, only handle relative and absolute paths
-		if strings.Contains(src, "://") {
-			continue
-		}
-
-		file, err = javascript.Resolve(src)
-
-		if err != nil {
-			return content, err
-		}
-
-		content = strings.Replace(content, src, file, 1)
-
-	}
-
-	link := `(?i)<link(.+)?\/?>`
-	regex = regexp.MustCompile(link)
-	matches = regex.FindAllStringSubmatch(content, -1)
-
-	for _, match := range matches {
-
-		code := match[0]
-		rel := ExtractAttribute(code, "rel", "")
-		href := ExtractAttribute(code, "href", "")
-		as := ExtractAttribute(code, "as", "")
-
-		if rel == "" || href == "" {
-			continue
-		}
-		if rel != "stylesheet" && (rel == "preload" && as == "") {
-			continue
-		}
-
-		file = href
-		extension := os.Extension(href)
-
-		if extension == ".css" {
-			file, err = css.Resolve(href)
-		} else if extension == ".sass" || extension == ".scss" {
-			file, err = css.Resolve(href)
-		} else if extension == ".js" {
-			file, err = javascript.Resolve(href)
-		} else if extension == ".ts" {
-			file, err = javascript.Resolve(href)
-		}
-
-		if err != nil {
-			return content, err
-		}
-
-		content = strings.Replace(content, href, file, 1)
-
-	}
-
-	return content, nil
-}
-
 // MergeContent returns the content of the item with the replaced partials dependencies
 func MergeContent(item *compactor.Item) string {
 
@@ -193,15 +190,42 @@ func MergeContent(item *compactor.Item) string {
 func Execute(bundle *compactor.Bundle) error {
 
 	content := MergeContent(bundle.Item)
-	content, err := Format(content)
 
-	if err != nil {
-		return err
+	for _, related := range bundle.Item.Related {
+
+		if related.Type != "other" {
+			continue
+		}
+
+		var err error
+		var file string
+
+		extension := os.Extension(related.Path)
+		path := related.Path
+
+		if extension == ".css" {
+			file, err = css.Resolve(path)
+		} else if extension == ".sass" || extension == ".scss" {
+			file, err = css.Resolve(path)
+		} else if extension == ".js" {
+			file, err = javascript.Resolve(path)
+		} else if extension == ".ts" {
+			file, err = javascript.Resolve(path)
+		} else {
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		content = strings.Replace(content, path, file, 1)
+
 	}
 
 	destination := bundle.ToDestination(bundle.Item.Path)
 	perm := bundle.Item.Permission
-	err = os.Write(destination, content, perm)
+	err := os.Write(destination, content, perm)
 
 	if err != nil {
 		return err

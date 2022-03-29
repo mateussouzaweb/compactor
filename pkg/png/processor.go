@@ -19,6 +19,21 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("cwebp", "cwebp-bin")
 }
 
+// Related processor
+func Related(item *compactor.Item) ([]compactor.Related, error) {
+
+	var related []compactor.Related
+
+	related = append(related, compactor.Related{
+		Type:   "alternative",
+		Source: "",
+		Path:   item.File + ".webp",
+		Item:   compactor.Get(item.Path + ".webp"),
+	})
+
+	return related, nil
+}
+
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
@@ -60,44 +75,16 @@ func Optimize(bundle *compactor.Bundle) error {
 	return nil
 }
 
-// Delete processor
-func Delete(bundle *compactor.Bundle) error {
-
-	err := generic.Delete(bundle)
-
-	if err != nil {
-		return err
-	}
-
-	for _, deleted := range bundle.Logs.Deleted {
-
-		extension := os.Extension(deleted)
-		extra := bundle.ToExtension(deleted, extension+".webp")
-
-		if !os.Exist(extra) {
-			continue
-		}
-
-		err := os.Delete(extra)
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return err
-}
-
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "png",
 		Extensions: []string{".png"},
 		Init:       Init,
-		Related:    generic.Related,
+		Related:    Related,
 		Execute:    Execute,
 		Optimize:   Optimize,
-		Delete:     Delete,
+		Delete:     generic.Delete,
 		Resolve:    generic.Resolve,
 	}
 }

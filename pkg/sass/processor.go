@@ -53,7 +53,7 @@ func Plugin() *compactor.Plugin {
 		Related:    css.Related,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
-		Delete:     css.Delete,
+		Delete:     generic.Delete,
 		Resolve:    css.Resolve,
 	}
 }

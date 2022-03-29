@@ -1,6 +1,10 @@
 package css
 
 import (
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
@@ -14,14 +18,42 @@ func Init(bundle *compactor.Bundle) error {
 // Related processor
 func Related(item *compactor.Item) ([]compactor.Related, error) {
 
-	var patterns []generic.FindPattern
-	patterns = append(patterns, generic.FindPattern{
-		Type:     "import",
-		Regex:    "@import \"(.+)\";?",
-		SubMatch: 1,
+	var related []compactor.Related
+
+	// Add possible source map
+	extension := os.Extension(item.Path)
+	file := strings.TrimSuffix(item.Path, extension)
+	file = file + ".css.map"
+
+	related = append(related, compactor.Related{
+		Type:   "source-map",
+		Source: "",
+		Path:   os.File(file),
+		Item:   compactor.Get(file),
 	})
 
-	return generic.FindRelated(item, patterns)
+	// Detect imports
+	regex := regexp.MustCompile(`@import "(.+)";?`)
+	matches := regex.FindAllStringSubmatch(item.Content, -1)
+
+	for _, match := range matches {
+		source := match[0]
+		path := match[1]
+		file := filepath.Join(os.Dir(item.Path), path)
+
+		if os.Extension(file) == "" {
+			file += item.Extension
+		}
+
+		related = append(related, compactor.Related{
+			Type:   "import",
+			Source: source,
+			Path:   path,
+			Item:   compactor.Get(file),
+		})
+	}
+
+	return related, nil
 }
 
 // Execute processor
@@ -65,33 +97,6 @@ func Execute(bundle *compactor.Bundle) error {
 	return nil
 }
 
-// Delete processor
-func Delete(bundle *compactor.Bundle) error {
-
-	err := generic.Delete(bundle)
-
-	if err != nil {
-		return err
-	}
-
-	for _, deleted := range bundle.Logs.Deleted {
-
-		extra := bundle.ToExtension(deleted, ".css.map")
-
-		if !os.Exist(extra) {
-			continue
-		}
-
-		err := os.Delete(extra)
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return err
-}
-
 // Resolve processor
 func Resolve(path string) (string, error) {
 
@@ -119,7 +124,7 @@ func Plugin() *compactor.Plugin {
 		Related:    Related,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
-		Delete:     Delete,
+		Delete:     generic.Delete,
 		Resolve:    Resolve,
 	}
 }
