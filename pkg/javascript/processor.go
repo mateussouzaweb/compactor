@@ -45,6 +45,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			file += item.Extension
 		}
 
+		if !os.Exist(file) {
+			file = strings.TrimSuffix(file, os.Extension(file))
+			file = file + item.Extension
+		}
+
 		related = append(related, compactor.Related{
 			Type:   "import",
 			Source: source,
