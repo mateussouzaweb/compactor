@@ -25,10 +25,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	var related []compactor.Related
 
 	related = append(related, compactor.Related{
-		Type:   "alternative",
-		Source: "",
-		Path:   item.File + ".webp",
-		Item:   compactor.Get(item.Path + ".webp"),
+		Type:       "alternative",
+		Dependency: true,
+		Source:     "",
+		Path:       item.File + ".webp",
+		Item:       compactor.Get(item.Path + ".webp"),
 	})
 
 	return related, nil

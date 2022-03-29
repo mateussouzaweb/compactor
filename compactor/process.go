@@ -58,7 +58,7 @@ func IndexBundles() error {
 
 	for _, item := range _items {
 		for _, related := range item.Related {
-			if related.IsDependency() {
+			if related.Dependency {
 				ignore[related.Item.Path] = true
 			}
 		}

@@ -52,7 +52,7 @@ func Delete(bundle *compactor.Bundle) error {
 
 	// Related dependencies
 	for _, related := range bundle.Item.Related {
-		if related.IsDependency() {
+		if related.Dependency {
 
 			// Variation from related item path
 			destination := bundle.ToDestination(related.Item.Path)

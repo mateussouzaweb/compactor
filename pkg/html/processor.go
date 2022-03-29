@@ -56,10 +56,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 		}
 
 		related = append(related, compactor.Related{
-			Type:   "partial",
-			Source: source,
-			Path:   path,
-			Item:   compactor.Get(file),
+			Type:       "partial",
+			Dependency: true,
+			Source:     source,
+			Path:       path,
+			Item:       compactor.Get(file),
 		})
 	}
 
@@ -84,10 +85,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 
 		file := filepath.Join(os.Dir(item.Path), src)
 		related = append(related, compactor.Related{
-			Type:   "other",
-			Source: code,
-			Path:   src,
-			Item:   compactor.Get(file),
+			Type:       "other",
+			Dependency: false,
+			Source:     code,
+			Path:       src,
+			Item:       compactor.Get(file),
 		})
 
 	}
@@ -112,10 +114,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 
 		file := filepath.Join(os.Dir(item.Path), href)
 		related = append(related, compactor.Related{
-			Type:   "other",
-			Source: code,
-			Path:   href,
-			Item:   compactor.Get(file),
+			Type:       "other",
+			Dependency: false,
+			Source:     code,
+			Path:       href,
+			Item:       compactor.Get(file),
 		})
 
 	}
@@ -193,7 +196,7 @@ func Execute(bundle *compactor.Bundle) error {
 
 	for _, related := range bundle.Item.Related {
 
-		if related.Type != "other" {
+		if related.Dependency {
 			continue
 		}
 

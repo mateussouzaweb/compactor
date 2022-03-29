@@ -19,32 +19,11 @@ type Item struct {
 	Related    []Related
 }
 
-// Related struct. Valid types:
-// import, export, require, partial, source-map, declaration, link, alternative and other
+// Related struct
 type Related struct {
-	Type   string
-	Source string
-	Path   string
-	Item   *Item
-}
-
-// IsDependency determines if the related asset is a dependency.
-// Dependencies should be carried with the main file
-func (r *Related) IsDependency() bool {
-	if r.Type == "import" {
-		return true
-	}
-	if r.Type == "partial" {
-		return true
-	}
-	if r.Type == "source-map" {
-		return true
-	}
-	if r.Type == "declaration" {
-		return true
-	}
-	if r.Type == "alternative" {
-		return true
-	}
-	return false
+	Type       string
+	Dependency bool
+	Source     string
+	Path       string
+	Item       *Item
 }

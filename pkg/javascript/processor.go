@@ -26,10 +26,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	file = file + ".js.map"
 
 	related = append(related, compactor.Related{
-		Type:   "source-map",
-		Source: "",
-		Path:   os.File(file),
-		Item:   compactor.Get(file),
+		Type:       "source-map",
+		Dependency: true,
+		Source:     "",
+		Path:       os.File(file),
+		Item:       compactor.Get(file),
 	})
 
 	// Detect imports
@@ -51,10 +52,11 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 		}
 
 		related = append(related, compactor.Related{
-			Type:   "import",
-			Source: source,
-			Path:   path,
-			Item:   compactor.Get(file),
+			Type:       "import",
+			Dependency: false,
+			Source:     source,
+			Path:       path,
+			Item:       compactor.Get(file),
 		})
 	}
 
