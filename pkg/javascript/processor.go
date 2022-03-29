@@ -45,9 +45,6 @@ func Execute(bundle *compactor.Bundle) error {
 		if related.Item.Exists && related.Type == "import" {
 			files = append(files, related.Item.Path)
 		}
-		if related.Item.Exists && related.Type == "require" {
-			files = append(files, related.Item.Path)
-		}
 	}
 
 	args := []string{}

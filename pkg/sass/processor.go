@@ -32,7 +32,7 @@ func Execute(bundle *compactor.Bundle) error {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
-	_, err = os.Exec(
+	_, err := os.Exec(
 		"sass",
 		args...,
 	)

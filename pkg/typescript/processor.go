@@ -48,52 +48,8 @@ func FindConfig(path string) string {
 	return FindConfig(os.Dir(path))
 }
 
-// Rename destination file
-func RenameDestination(from string, to string) error {
-
-	err := os.Rename(from, to)
-
-	if err != nil {
-		return err
-	}
-
-	if os.Exist(from + ".map") {
-
-		err = os.Rename(from+".map", to+".map")
-
-		if err != nil {
-			return err
-		}
-
-		fromName := os.File(from)
-		toName := os.File(to)
-
-		err = os.Replace(to,
-			"sourceMappingURL="+fromName+".map",
-			"sourceMappingURL="+toName+".map",
-		)
-
-		if err != nil {
-			return err
-		}
-
-		err = os.Replace(to+".map",
-			"\"file\":\""+fromName+"\"",
-			"\"file\":\""+toName+"\"",
-		)
-
-	}
-
-	return err
-}
-
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
-
-	hash := bundle.Item.Checksum
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
 
 	files := []string{bundle.Item.Path}
 
@@ -101,29 +57,33 @@ func Execute(bundle *compactor.Bundle) error {
 		if related.Item.Exists && related.Type == "import" {
 			files = append(files, related.Item.Path)
 		}
-		if related.Item.Exists && related.Type == "require" {
-			files = append(files, related.Item.Path)
-		}
+	}
+
+	compilerOptions := make(map[string]interface{})
+
+	// Make sure output is present and set destination
+	compilerOptions["outDir"] = bundle.Destination.Path
+	compilerOptions["skipLibCheck"] = true
+	compilerOptions["emitDeclarationOnly"] = false
+	compilerOptions["noEmit"] = false
+	compilerOptions["noEmitOnError"] = true
+
+	// To compile correctly we need to force isolatedModules and noResolve
+	compilerOptions["noResolve"] = true
+	compilerOptions["isolatedModules"] = true
+
+	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
+		compilerOptions["sourceMap"] = true
+		compilerOptions["inlineSources"] = true
 	}
 
 	config := TSConfig{
-		CompilerOptions: make(map[string]interface{}),
+		CompilerOptions: compilerOptions,
 		Exclude:         make([]string, 0),
 		Extends:         FindConfig(bundle.Source.Path),
 		Files:           make([]string, 0),
 		Include:         files,
 		References:      make([]string, 0),
-	}
-
-	config.CompilerOptions["outDir"] = bundle.Destination.Path
-	config.CompilerOptions["removeComments"] = true
-	config.CompilerOptions["skipLibCheck"] = true
-	config.CompilerOptions["emitDeclarationOnly"] = false
-	config.CompilerOptions["noEmit"] = false
-
-	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
-		config.CompilerOptions["sourceMap"] = true
-		config.CompilerOptions["inlineSources"] = true
 	}
 
 	configJson, err := json.Marshal(config)
@@ -156,15 +116,11 @@ func Execute(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	// Rename file to hashed version if necessary
-	output := bundle.ToNonHashed(destination, hash)
+	// Rename files to hashed version if necessary
+	err = RenameDestination(bundle)
 
-	if destination != output {
-		err = RenameDestination(output, destination)
-
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	bundle.Processed(bundle.Item.Path)
