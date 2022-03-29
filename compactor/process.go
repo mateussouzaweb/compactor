@@ -64,6 +64,9 @@ func IndexBundles() error {
 		}
 	}
 
+	// Create a new list of bundles
+	var bundles []*Bundle
+
 	// Now create the bundle registry
 	for _, item := range _items {
 
@@ -77,10 +80,13 @@ func IndexBundles() error {
 		bundle.Item = item
 
 		if bundle.ShouldInclude(item.Path) {
-			AddBundle(&bundle)
+			bundles = append(bundles, &bundle)
 		}
 
 	}
+
+	// Update the bundles index
+	SetBundles(bundles)
 
 	return nil
 }

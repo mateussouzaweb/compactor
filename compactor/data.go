@@ -166,9 +166,9 @@ func GetPlugin(extension string) *Plugin {
 	return &Plugin{}
 }
 
-// AddBundle add a new bundle to the index
-func AddBundle(bundle *Bundle) {
-	_bundles = append(_bundles, bundle)
+// SetBundles renew the index of bundles with a new list
+func SetBundles(bundles []*Bundle) {
+	_bundles = bundles
 }
 
 // GetBundle retrieve the related bundle for the file
