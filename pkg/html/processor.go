@@ -163,10 +163,36 @@ func Format(content string) (string, error) {
 	return content, nil
 }
 
+// MergeContent returns the content of the item with the replaced partials dependencies
+func MergeContent(item *compactor.Item) string {
+
+	if !item.Exists {
+		return ""
+	}
+
+	content := item.Content
+
+	for _, related := range item.Related {
+		if related.Type == "partial" && related.Item.Exists {
+
+			// Solves recursively
+			content = strings.Replace(
+				content,
+				related.Source,
+				MergeContent(related.Item),
+				1,
+			)
+
+		}
+	}
+
+	return content
+}
+
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	content := bundle.Item.MergedContent()
+	content := MergeContent(bundle.Item)
 	content, err := Format(content)
 
 	if err != nil {
