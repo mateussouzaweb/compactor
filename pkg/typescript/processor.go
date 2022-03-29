@@ -63,6 +63,7 @@ func Execute(bundle *compactor.Bundle) error {
 	compilerOptions := make(map[string]interface{})
 
 	// Make sure output is present and set destination
+	compilerOptions["baseUrl"] = bundle.Source.Path
 	compilerOptions["outDir"] = bundle.Destination.Path
 	compilerOptions["skipLibCheck"] = true
 	compilerOptions["emitDeclarationOnly"] = false

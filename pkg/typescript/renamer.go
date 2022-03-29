@@ -117,14 +117,21 @@ func RenameDestination(bundle *compactor.Bundle) error {
 	for _, related := range bundle.Item.Related {
 		if related.Item.Exists && related.Type == "import" {
 
-			err := os.Replace(main.ToPath,
-				related.Path,
-				strings.Replace(
-					related.Path,
-					os.Name(main.FromName),
-					os.Name(main.ToName),
-					1,
-				),
+			to := bundle.ToDestination(related.Item.Path)
+			to = bundle.ToExtension(to, ".js")
+			to = bundle.ToHashed(to, related.Item.Checksum)
+
+			newSource := strings.Replace(
+				related.Source,
+				related.Item.Name,
+				os.Name(to),
+				1,
+			)
+
+			err := os.Replace(
+				main.ToPath,
+				related.Source,
+				newSource,
 			)
 
 			if err != nil {
