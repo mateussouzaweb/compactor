@@ -342,6 +342,8 @@ func main() {
 		return
 	}
 
+	os.Printf(os.Notice, "[INFO] Waiting for changes...\n")
+
 	os.Watch(
 		options.Source.Path,
 		time.Millisecond*250,
