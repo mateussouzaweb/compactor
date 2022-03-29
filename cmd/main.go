@@ -67,6 +67,7 @@ func processRelated(bundle *compactor.Bundle) error {
 		for _, related := range theBundle.Item.Related {
 			if !related.Dependency && related.Item.Path == bundle.Item.Path {
 				process(theBundle)
+				break
 			}
 		}
 
