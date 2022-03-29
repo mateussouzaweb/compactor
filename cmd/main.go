@@ -65,7 +65,7 @@ func processRelated(bundle *compactor.Bundle) error {
 
 		// Check on related items to the bundle
 		for _, related := range theBundle.Item.Related {
-			if related.Item.Path == bundle.Item.Path && related.Type == "link" {
+			if !related.IsDependency() && related.Item.Path == bundle.Item.Path {
 				process(theBundle)
 			}
 		}
