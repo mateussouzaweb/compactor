@@ -21,6 +21,7 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 - Automatically add hash ID to avoid caching in JS and CSS files: ``file.js`` -> ``file.485.js``
 - Compress images in GIF, JPG, JPEG, PNG and SVG format.
 - Automatically create WEBP copy from JPG, JPEG and PNG as progressive enhancement.
+- Partials for HTML includes.
 - Watch mode for automation and live development.
 - CLI flags to fine tuning control.
 - Just works!
@@ -29,8 +30,6 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 
 ## RoadMap (In Development)
 
-- HTML include feature for code splitting.
-- A way of create source-map for HTML (maybe simple comment).
 - Single output from multiple files for SASS and TypeScript (these languages does not include it out of the box, you have to use a 'index' file).
 - Single output and merge for JSON, XML e SVG.
 - Avif copy format from others images formats.
@@ -76,7 +75,7 @@ To watch live changes while developing a project, add the watch flag:
 
 ```bash
 compactor \
-    --watch
+    --watch \
     --source /path/to/source/ \
     --destination /path/to/destination/
 ```
