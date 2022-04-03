@@ -33,7 +33,7 @@ func Init(bundle *compactor.Bundle) error {
 	return os.NodeRequire("terser", "terser")
 }
 
-// Find user defined TypeScript config file
+// FindConfig locate the user defined TypeScript config file
 func FindConfig(path string) string {
 
 	if os.Exist(filepath.Join(path, "jsconfig.json")) {
@@ -49,17 +49,34 @@ func FindConfig(path string) string {
 	return FindConfig(os.Dir(path))
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// FindFiles retrieve the final list of processable items
+func FindFiles(item *compactor.Item) []string {
 
-	files := []string{bundle.Item.Path}
+	files := []string{item.Path}
+	result := []string{}
+	found := make(map[string]bool)
 
-	for _, related := range bundle.Item.Related {
+	for _, related := range item.Related {
 		if related.Item.Exists && related.Type == "import" {
 			files = append(files, related.Item.Path)
+			files = append(files, FindFiles(related.Item)...)
 		}
 	}
 
+	for _, file := range files {
+		if _, ok := found[file]; !ok {
+			found[file] = true
+			result = append(result, file)
+		}
+	}
+
+	return result
+}
+
+// Execute processor
+func Execute(bundle *compactor.Bundle) error {
+
+	files := FindFiles(bundle.Item)
 	compilerOptions := make(map[string]interface{})
 
 	// Make sure output is present and set destination

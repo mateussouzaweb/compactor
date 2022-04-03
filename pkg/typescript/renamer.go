@@ -9,32 +9,33 @@ import (
 
 // TSRename struct
 type TSRename struct {
+	Name     string
+	Source   string
 	FromPath string
 	FromName string
 	ToPath   string
 	ToName   string
 }
 
-// RenameDestination fix names of destinations files
-func RenameDestination(bundle *compactor.Bundle) error {
+// FindRenames will create a list of possible renames based on internal rules
+func FindRenames(bundle *compactor.Bundle, item *compactor.Item) []TSRename {
 
 	var changes []TSRename
-	var changed bool
 
-	// Since we have the dependency graph of the bundle
-	// We can predit the files that typescript will generate to create the list of changes
-	from := bundle.ToDestination(bundle.Item.Path)
+	from := bundle.ToDestination(item.Path)
 	from = bundle.ToExtension(from, ".js")
-	to := bundle.ToHashed(from, bundle.Item.Checksum)
+	to := bundle.ToHashed(from, item.Checksum)
 
 	changes = append(changes, TSRename{
+		Name:     item.Name,
+		Source:   "",
 		FromPath: from,
 		FromName: os.File(from),
 		ToPath:   to,
 		ToName:   os.File(to),
 	})
 
-	for _, related := range bundle.Item.Related {
+	for _, related := range item.Related {
 		if related.Item.Exists && related.Type == "import" {
 
 			from := bundle.ToDestination(related.Item.Path)
@@ -42,16 +43,31 @@ func RenameDestination(bundle *compactor.Bundle) error {
 			to := bundle.ToHashed(from, related.Item.Checksum)
 
 			changes = append(changes, TSRename{
+				Name:     related.Item.Name,
+				Source:   related.Source,
 				FromPath: from,
 				FromName: os.File(from),
 				ToPath:   to,
 				ToName:   os.File(to),
 			})
 
+			changes = append(changes, FindRenames(bundle, related.Item)...)
+
 		}
 	}
 
+	return changes
+}
+
+// RenameDestination fix names of destinations files
+func RenameDestination(bundle *compactor.Bundle) error {
+
+	// Since we have the dependency graph of the bundle
+	// We can predit the files that typescript will generate to create the list of changes
+	changes := FindRenames(bundle, bundle.Item)
+
 	// With the list of changes, we then rename the files to the hashed version
+	var changed bool
 	for _, change := range changes {
 
 		// Make basic verifications
@@ -62,7 +78,7 @@ func RenameDestination(bundle *compactor.Bundle) error {
 			continue
 		}
 
-		// Rename the main file
+		// Rename the file
 		err := os.Rename(change.FromPath, change.ToPath)
 
 		if err != nil {
@@ -112,25 +128,24 @@ func RenameDestination(bundle *compactor.Bundle) error {
 
 	}
 
-	// And finally we fix import references on the main file
-	main := changes[0]
-	for _, related := range bundle.Item.Related {
-		if related.Item.Exists && related.Type == "import" {
+	// And finally we fix import references on the files
+	for _, change := range changes {
+		for _, update := range changes {
 
-			to := bundle.ToDestination(related.Item.Path)
-			to = bundle.ToExtension(to, ".js")
-			to = bundle.ToHashed(to, related.Item.Checksum)
+			if update.Source == "" {
+				continue
+			}
 
 			newSource := strings.Replace(
-				related.Source,
-				related.Item.Name,
-				os.Name(to),
+				update.Source,
+				update.Name,
+				os.Name(update.ToName),
 				1,
 			)
 
 			err := os.Replace(
-				main.ToPath,
-				related.Source,
+				change.ToPath,
+				update.Source,
 				newSource,
 			)
 
