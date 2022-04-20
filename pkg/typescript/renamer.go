@@ -136,12 +136,9 @@ func RenameDestination(bundle *compactor.Bundle) error {
 				continue
 			}
 
-			newSource := strings.Replace(
-				update.Source,
-				update.Name,
-				os.Name(update.ToName),
-				1,
-			)
+			first := strings.LastIndex(update.Source, update.Name)
+			last := first + len(update.Name)
+			newSource := update.Source[:first] + os.Name(update.ToName) + update.Source[last:]
 
 			err := os.Replace(
 				change.ToPath,
