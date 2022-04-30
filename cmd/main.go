@@ -349,7 +349,7 @@ func main() {
 		time.Millisecond*250,
 		func(path string) error {
 
-			compactor.Index(os.Dir(path))
+			compactor.Index(options.Source.Path)
 			bundle := compactor.GetBundle(path)
 
 			err := process(bundle)
