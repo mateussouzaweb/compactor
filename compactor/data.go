@@ -45,16 +45,19 @@ func Get(path string) *Item {
 }
 
 // Append file path information to index
-func Append(path string) error {
+func Append(path string, root string) error {
 
+	location := os.Relative(path, root)
 	content, checksum, perm := os.Info(path)
 
 	item := Item{
 		Path:       path,
-		Folder:     os.Dir(path),
-		File:       os.File(path),
-		Name:       os.Name(path),
-		Extension:  os.Extension(path),
+		Root:       root,
+		Location:   location,
+		Folder:     os.Dir(location),
+		File:       os.File(location),
+		Name:       os.Name(location),
+		Extension:  os.Extension(location),
 		Content:    content,
 		Permission: perm,
 		Exists:     os.Exist(path),

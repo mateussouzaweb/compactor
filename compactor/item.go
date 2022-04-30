@@ -6,17 +6,19 @@ import (
 
 // Item struct
 type Item struct {
-	Path       string
-	Folder     string
-	File       string
-	Name       string
-	Extension  string
-	Content    string
-	Permission fs.FileMode
-	Exists     bool
-	Checksum   string
-	Previous   string
-	Related    []Related
+	Path       string      // Full path (root + location)
+	Root       string      // Root location
+	Location   string      // Location from root
+	Folder     string      // Location folder
+	File       string      // File name with extension
+	Name       string      // File name
+	Extension  string      // File Extension
+	Content    string      // File content
+	Permission fs.FileMode // File permissions
+	Exists     bool        // File exists flag
+	Checksum   string      // Current Checksum
+	Previous   string      // Previous Checksum
+	Related    []Related   // Related items
 }
 
 // Related struct

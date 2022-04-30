@@ -5,9 +5,9 @@ import (
 )
 
 // IndexItems walks on path and add files to the index
-func IndexItems(path string) error {
+func IndexItems(root string) error {
 
-	files, err := os.List(path)
+	files, err := os.List(root)
 
 	if err != nil {
 		return err
@@ -15,7 +15,7 @@ func IndexItems(path string) error {
 
 	for _, file := range files {
 		if Get(file).Path == "" {
-			Append(file)
+			Append(file, root)
 		} else {
 			Update(file)
 		}
