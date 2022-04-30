@@ -1,7 +1,6 @@
 package html
 
 import (
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -43,12 +42,12 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
-		file := filepath.Join(os.Dir(item.Path), path)
 
-		if os.Extension(file) == "" {
-			file += item.Extension
+		if os.Extension(path) == "" {
+			path += item.Extension
 		}
 
+		file := os.Resolve(path, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "partial",
 			Dependency: true,
@@ -77,7 +76,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := filepath.Join(os.Dir(item.Path), src)
+		file := os.Resolve(src, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "other",
 			Dependency: false,
@@ -106,7 +105,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := filepath.Join(os.Dir(item.Path), href)
+		file := os.Resolve(href, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "other",
 			Dependency: false,

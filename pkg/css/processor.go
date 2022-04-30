@@ -1,7 +1,6 @@
 package css
 
 import (
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -40,12 +39,12 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
-		file := filepath.Join(os.Dir(item.Path), path)
 
-		if os.Extension(file) == "" {
-			file += item.Extension
+		if os.Extension(path) == "" {
+			path += item.Extension
 		}
 
+		file := os.Resolve(path, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "import",
 			Dependency: true,

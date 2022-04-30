@@ -306,3 +306,16 @@ func EnsureDirectory(file string) error {
 
 	return nil
 }
+
+// Resolve will check paths until file is detected
+func Resolve(file string, path string) string {
+
+	if Exist(filepath.Join(path, file)) {
+		return filepath.Join(path, file)
+	}
+	if len(path) <= 1 {
+		return file
+	}
+
+	return Resolve(file, Dir(path))
+}
