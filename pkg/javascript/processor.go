@@ -44,12 +44,12 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	})
 
 	// Detect imports
-	regex := regexp.MustCompile(`import (.+) from "(.+)";?`)
+	regex := regexp.MustCompile(`import (.+) from ("(.+)"|'(.+)');?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
 		source := match[0]
-		path := match[2]
+		path := strings.Trim(match[2], `'"`)
 		file := filepath.Join(os.Dir(item.Path), path)
 
 		if os.Extension(file) == "" {

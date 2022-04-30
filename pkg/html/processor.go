@@ -20,18 +20,11 @@ func Init(bundle *compactor.Bundle) error {
 // ExtractAttribute find the value of the attribute
 func ExtractAttribute(html string, attribute string, defaultValue string) string {
 
-	regex := regexp.MustCompile(attribute + `="([^"]*)"`)
+	regex := regexp.MustCompile(attribute + `=("([^"]*)"|'([^']*)')`)
 	match := regex.FindStringSubmatch(html)
 
 	if match != nil {
-		return match[1]
-	}
-
-	regex = regexp.MustCompile(attribute + `='([^']*)'`)
-	match = regex.FindStringSubmatch(html)
-
-	if match != nil {
-		return match[1]
+		return strings.Trim(match[1], `'"`)
 	}
 
 	return defaultValue
@@ -43,12 +36,12 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	var related []compactor.Related
 
 	// Detect imports
-	regex := regexp.MustCompile(`<!-- @import "(.+)" -->`)
+	regex := regexp.MustCompile(`<!-- @import ("(.+)"|'(.+)') -->`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
 		source := match[0]
-		path := match[1]
+		path := strings.Trim(match[1], `'"`)
 		file := filepath.Join(os.Dir(item.Path), path)
 
 		if os.Extension(file) == "" {
