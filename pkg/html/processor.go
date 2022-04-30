@@ -10,6 +10,7 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/css"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 	"github.com/mateussouzaweb/compactor/pkg/javascript"
+	"github.com/mateussouzaweb/compactor/pkg/typescript"
 )
 
 // Init processor
@@ -203,10 +204,12 @@ func Execute(bundle *compactor.Bundle) error {
 			file, err = css.Resolve(path)
 		} else if extension == ".sass" || extension == ".scss" {
 			file, err = css.Resolve(path)
-		} else if extension == ".js" {
+		} else if extension == ".js" || extension == ".mjs" {
 			file, err = javascript.Resolve(path)
-		} else if extension == ".ts" {
-			file, err = javascript.Resolve(path)
+		} else if extension == ".ts" || extension == ".mts" {
+			file, err = typescript.Resolve(path)
+		} else if extension == ".tsx" || extension == ".jsx" {
+			file, err = typescript.Resolve(path)
 		} else {
 			continue
 		}
