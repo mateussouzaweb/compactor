@@ -51,9 +51,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".sass", ".scss", ".css"},
 		Init:       Init,
 		Related:    css.Related,
+		Resolve:    css.Resolve,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
 		Delete:     generic.Delete,
-		Resolve:    css.Resolve,
 	}
 }

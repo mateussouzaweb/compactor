@@ -245,9 +245,9 @@ func Optimize(bundle *compactor.Bundle) error {
 }
 
 // Resolve processor
-func Resolve(path string) (string, error) {
+func Resolve(path string, item *compactor.Item) (string, error) {
 
-	destination, err := generic.Resolve(path)
+	destination, err := generic.Resolve(path, item)
 
 	if err != nil {
 		return destination, err
@@ -269,9 +269,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
 		Init:       Init,
 		Related:    Related,
+		Resolve:    Resolve,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     generic.Delete,
-		Resolve:    Resolve,
 	}
 }

@@ -53,9 +53,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".gif"},
 		Init:       Init,
 		Related:    generic.Related,
+		Resolve:    generic.Resolve,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     generic.Delete,
-		Resolve:    generic.Resolve,
 	}
 }

@@ -18,6 +18,20 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	return found, nil
 }
 
+// Resolve return the clean bundle destination path for given source file path
+func Resolve(path string, item *compactor.Item) (string, error) {
+
+	bundle := compactor.GetBundle(path)
+	destination := bundle.ToDestination(bundle.Item.Path)
+	destination = bundle.CleanPath(destination)
+
+	if strings.HasPrefix(path, "/") {
+		destination = "/" + destination
+	}
+
+	return destination, nil
+}
+
 // Execute create generic copy of file(s) content to destination
 func Execute(bundle *compactor.Bundle) error {
 
@@ -88,20 +102,6 @@ func Delete(bundle *compactor.Bundle) error {
 	return nil
 }
 
-// Resolve return the clean bundle destination path for given source file path
-func Resolve(path string) (string, error) {
-
-	bundle := compactor.GetBundle(path)
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.CleanPath(destination)
-
-	if strings.HasPrefix(path, "/") {
-		destination = "/" + destination
-	}
-
-	return destination, nil
-}
-
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
@@ -109,9 +109,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{},
 		Init:       Init,
 		Related:    Related,
+		Resolve:    Resolve,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     Delete,
-		Resolve:    Resolve,
 	}
 }

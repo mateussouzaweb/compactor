@@ -58,6 +58,24 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	return related, nil
 }
 
+// Resolve processor
+func Resolve(path string, item *compactor.Item) (string, error) {
+
+	destination, err := generic.Resolve(path, item)
+
+	if err != nil {
+		return destination, err
+	}
+
+	bundle := compactor.GetBundle(path)
+	hash := bundle.Item.Checksum
+
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.ToExtension(destination, ".css")
+
+	return destination, nil
+}
+
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
@@ -99,24 +117,6 @@ func Execute(bundle *compactor.Bundle) error {
 	return nil
 }
 
-// Resolve processor
-func Resolve(path string) (string, error) {
-
-	destination, err := generic.Resolve(path)
-
-	if err != nil {
-		return destination, err
-	}
-
-	bundle := compactor.GetBundle(path)
-	hash := bundle.Item.Checksum
-
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".css")
-
-	return destination, nil
-}
-
 // Plugin return the compactor plugin instance
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
@@ -124,9 +124,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".css"},
 		Init:       Init,
 		Related:    Related,
+		Resolve:    Resolve,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
 		Delete:     generic.Delete,
-		Resolve:    Resolve,
 	}
 }

@@ -86,9 +86,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".jpeg", ".jpg"},
 		Init:       Init,
 		Related:    Related,
+		Resolve:    generic.Resolve,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     generic.Delete,
-		Resolve:    generic.Resolve,
 	}
 }

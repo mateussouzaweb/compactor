@@ -201,15 +201,15 @@ func Execute(bundle *compactor.Bundle) error {
 		path := related.Path
 
 		if extension == ".css" {
-			file, err = css.Resolve(path)
+			file, err = css.Resolve(path, bundle.Item)
 		} else if extension == ".sass" || extension == ".scss" {
-			file, err = css.Resolve(path)
+			file, err = css.Resolve(path, bundle.Item)
 		} else if extension == ".js" || extension == ".mjs" {
-			file, err = javascript.Resolve(path)
+			file, err = javascript.Resolve(path, bundle.Item)
 		} else if extension == ".ts" || extension == ".mts" {
-			file, err = typescript.Resolve(path)
+			file, err = typescript.Resolve(path, bundle.Item)
 		} else if extension == ".tsx" || extension == ".jsx" {
-			file, err = typescript.Resolve(path)
+			file, err = typescript.Resolve(path, bundle.Item)
 		} else {
 			continue
 		}
@@ -270,9 +270,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".html", ".htm"},
 		Init:       Init,
 		Related:    Related,
+		Resolve:    generic.Resolve,
 		Execute:    Execute,
 		Optimize:   Optimize,
 		Delete:     generic.Delete,
-		Resolve:    generic.Resolve,
 	}
 }

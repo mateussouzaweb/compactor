@@ -46,9 +46,9 @@ func Plugin() *compactor.Plugin {
 		Extensions: []string{".webp"},
 		Init:       Init,
 		Related:    generic.Related,
+		Resolve:    generic.Resolve,
 		Execute:    Execute,
 		Optimize:   generic.Optimize,
 		Delete:     generic.Delete,
-		Resolve:    generic.Resolve,
 	}
 }
