@@ -81,13 +81,16 @@ func Update(path string) error {
 
 		exists := os.Exist(item.Path)
 		content, checksum, perm := os.Info(item.Path)
-		previous := item.Checksum
+		current := item.Checksum
 
 		item.Content = content
 		item.Permission = perm
 		item.Exists = exists
 		item.Checksum = checksum
-		item.Previous = previous
+
+		if item.Checksum != current {
+			item.Previous = current
+		}
 
 		break
 	}
