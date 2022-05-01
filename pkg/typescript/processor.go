@@ -1,8 +1,7 @@
 package typescript
 
 import (
-	"encoding/json"
-	"path/filepath"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -11,15 +10,8 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// TSConfig struct
-type TSConfig struct {
-	CompilerOptions map[string]interface{} `json:"compilerOptions,omitempty"`
-	Exclude         []string               `json:"exclude,omitempty"`
-	Extends         string                 `json:"extends,omitempty"`
-	Files           []string               `json:"files,omitempty"`
-	Include         []string               `json:"include,omitempty"`
-	References      []string               `json:"references,omitempty"`
-}
+var _tsConfig *TSConfig
+var _tsConfigFile string
 
 // Init processor
 func Init(bundle *compactor.Bundle) error {
@@ -30,13 +22,38 @@ func Init(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	return os.NodeRequire("terser", "terser")
+	err = os.NodeRequire("terser", "terser")
+
+	if err != nil {
+		return err
+	}
+
+	return InitConfig(bundle.Source.Path)
+}
+
+// InitConfig find and read tsconfig file from given path
+func InitConfig(path string) error {
+
+	var err error
+	_tsConfigFile = FindConfig(path)
+	_tsConfig, err = ReadConfig(_tsConfigFile)
+
+	return err
 }
 
 // Related processor
 func Related(item *compactor.Item) ([]compactor.Related, error) {
 
 	var related []compactor.Related
+
+	// Read config if not loaded yet
+	if _tsConfigFile == "" {
+		err := InitConfig(item.Root)
+
+		if err != nil {
+			return related, err
+		}
+	}
 
 	// Add possible source map
 	extension := os.Extension(item.Path)
@@ -62,19 +79,20 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	})
 
 	// Detect imports
-	regex := regexp.MustCompile(`import (.+) from ("(.+)"|'(.+)');?`)
+	regex := regexp.MustCompile(`import ?((.+) ?from ?)?("(.+)"|'(.+)');?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
 		source := match[0]
-		sourcePath := strings.Trim(match[2], `'"`)
+		path := strings.Trim(match[3], `'"`)
+		thePath := FindRealPath(path)
 
-		file := os.Resolve(sourcePath, os.Dir(item.Path))
+		file := os.Resolve(thePath, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "import",
 			Dependency: false,
 			Source:     source,
-			Path:       sourcePath,
+			Path:       path,
 			Item:       compactor.Get(file),
 		})
 	}
@@ -82,113 +100,109 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	return related, nil
 }
 
-// FindConfig locate the user defined TypeScript config file
-func FindConfig(path string) string {
+// Resolve processor
+func Resolve(path string, item *compactor.Item) (string, error) {
 
-	if os.Exist(filepath.Join(path, "jsconfig.json")) {
-		return filepath.Join(path, "jsconfig.json")
-	}
-	if os.Exist(filepath.Join(path, "tsconfig.json")) {
-		return filepath.Join(path, "tsconfig.json")
-	}
-	if len(path) <= 1 {
-		return ""
-	}
+	path = FindRealPath(path)
+	file := os.Resolve(path, os.Dir(item.Path))
 
-	return FindConfig(os.Dir(path))
+	bundle := compactor.GetBundle(file)
+	hash := bundle.Item.Checksum
+
+	destination := bundle.ToDestination(bundle.Item.Path)
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.ToExtension(destination, ".js")
+	destination = bundle.CleanPath(destination)
+	destination = "/" + destination
+
+	return destination, nil
 }
 
-// FindFiles retrieve the final list of processable items
-func FindFiles(item *compactor.Item) []string {
+// FindRealPath transform TSConfig paths into real path values
+func FindRealPath(path string) string {
 
-	files := []string{item.Path}
-	result := []string{}
-	found := make(map[string]bool)
+	paths, ok := _tsConfig.CompilerOptions["paths"].(map[string]interface{})
 
-	for _, related := range item.Related {
-		if related.Item.Exists && related.Type == "import" {
-			files = append(files, related.Item.Path)
-			files = append(files, FindFiles(related.Item)...)
+	if ok {
+		for key, values := range paths {
+			find := strings.Trim(key, "*")
+			value := fmt.Sprintf("%v", values.([]interface{})[0])
+			replace := strings.Trim(value, "*")
+			path = strings.Replace(path, find, replace, 1)
 		}
 	}
 
-	for _, file := range files {
-		if _, ok := found[file]; !ok {
-			found[file] = true
-			result = append(result, file)
-		}
+	// Append extension if not declared
+	if os.Extension(path) == "" {
+		path += ".ts"
 	}
 
-	return result
+	return path
 }
 
 // Execute processor
 func Execute(bundle *compactor.Bundle) error {
 
-	files := FindFiles(bundle.Item)
-	compilerOptions := make(map[string]interface{})
+	// Copy from user config file and make sure output is present
+	config := *_tsConfig
+	config.CompilerOptions["emitDeclarationOnly"] = false
+	config.CompilerOptions["noEmit"] = false
+	config.CompilerOptions["noEmitOnError"] = true
 
-	// Make sure output is present and set destination
-	compilerOptions["baseUrl"] = bundle.ToSource(bundle.Item.Folder)
-	compilerOptions["outDir"] = bundle.ToDestination(bundle.Item.Folder)
-	compilerOptions["skipLibCheck"] = true
-	compilerOptions["emitDeclarationOnly"] = false
-	compilerOptions["noEmit"] = false
-	compilerOptions["noEmitOnError"] = true
+	// To compile correctly we need to force noLib, noResolve and isolatedModules
+	config.CompilerOptions["noLib"] = true
+	config.CompilerOptions["noResolve"] = true
+	config.CompilerOptions["isolatedModules"] = true
 
-	// To compile correctly we need to force isolatedModules and noResolve
-	compilerOptions["noResolve"] = true
-	compilerOptions["isolatedModules"] = true
-
+	// Enable source maps
 	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
-		compilerOptions["sourceMap"] = true
-		compilerOptions["inlineSources"] = true
+		config.CompilerOptions["sourceMap"] = true
+		config.CompilerOptions["inlineSources"] = true
 	}
 
-	config := TSConfig{
-		CompilerOptions: compilerOptions,
-		Exclude:         make([]string, 0),
-		Extends:         FindConfig(bundle.Source.Path),
-		Files:           make([]string, 0),
-		Include:         files,
-		References:      make([]string, 0),
-	}
+	// Run transpilation
+	hash := bundle.Item.Checksum
+	destination := bundle.ToDestination(bundle.Item.Path)
+	destination = bundle.ToHashed(destination, hash)
+	destination = bundle.ToExtension(destination, ".js")
 
-	configJson, err := json.Marshal(config)
+	err := RunTranspiler(Transpiler{
+		Content:     bundle.Item.Content,
+		Options:     &config,
+		Destination: destination,
+	})
 
 	if err != nil {
 		return err
 	}
 
-	configFile := os.TemporaryFile("tsconfig.json")
-	defer os.Delete(configFile)
+	// Update paths after transpile code with correct final destinations
+	for _, related := range bundle.Item.Related {
+		if related.Item.Exists && related.Type == "import" {
 
-	err = os.Write(configFile, string(configJson), 0775)
+			fromPath := related.Path
+			toPath, err := Resolve(fromPath, bundle.Item)
 
-	if err != nil {
-		return err
-	}
+			if err != nil {
+				return err
+			}
 
-	// Compile
-	args := []string{
-		"--build",
-		configFile,
-	}
+			oldSource := related.Source
+			firstIndex := strings.LastIndex(oldSource, fromPath)
+			lastIndex := firstIndex + len(fromPath)
+			newSource := oldSource[:firstIndex] + toPath + oldSource[lastIndex:]
 
-	_, err = os.Exec(
-		"tsc",
-		args...,
-	)
+			err = os.Replace(
+				destination,
+				oldSource,
+				newSource,
+			)
 
-	if err != nil {
-		return err
-	}
+			if err != nil {
+				return err
+			}
 
-	// Rename files to hashed version if necessary
-	err = RenameDestination(bundle)
-
-	if err != nil {
-		return err
+		}
 	}
 
 	return nil
@@ -233,24 +247,6 @@ func Optimize(bundle *compactor.Bundle) error {
 	)
 
 	return err
-}
-
-// Resolve processor
-func Resolve(path string, item *compactor.Item) (string, error) {
-
-	destination, err := generic.Resolve(path, item)
-
-	if err != nil {
-		return destination, err
-	}
-
-	bundle := compactor.GetBundle(path)
-	hash := bundle.Item.Checksum
-
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-
-	return destination, nil
 }
 
 // Plugin return the compactor plugin instance
