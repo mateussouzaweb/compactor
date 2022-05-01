@@ -107,3 +107,16 @@ required('bundled.js')
 ```
 
 That is it! Enjoy!
+
+## TypeScript - Required Options
+
+To use TypeScript compilation, you must provide the ``tsconfig.json`` file with at least the following options. Please make sure that the ``--source`` CLI option are the same as the ``baseUrl`` value inside the config file:
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": "./src/",
+    "isolatedModules": true
+  }
+}
+```
