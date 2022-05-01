@@ -38,26 +38,14 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 
 	for _, match := range matches {
 		source := match[0]
-		sourcePath := strings.Trim(match[2], `'"`)
-
-		path := sourcePath
-		if os.Extension(path) == "" {
-			path += item.Extension
-		}
+		path := strings.Trim(match[2], `'"`)
 
 		file := os.Resolve(path, os.Dir(item.Path))
-
-		if !os.Exist(file) {
-			path = strings.TrimSuffix(path, os.Extension(path))
-			path = path + item.Extension
-			file = os.Resolve(path, os.Dir(item.Path))
-		}
-
 		related = append(related, compactor.Related{
 			Type:       "import",
 			Dependency: false,
 			Source:     source,
-			Path:       sourcePath,
+			Path:       path,
 			Item:       compactor.Get(file),
 		})
 	}
