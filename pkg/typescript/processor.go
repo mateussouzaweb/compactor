@@ -67,8 +67,9 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 
 	for _, match := range matches {
 		source := match[0]
-		path := strings.Trim(match[2], `'"`)
+		sourcePath := strings.Trim(match[2], `'"`)
 
+		path := sourcePath
 		if os.Extension(path) == "" {
 			path += item.Extension
 		}
@@ -85,7 +86,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			Type:       "import",
 			Dependency: false,
 			Source:     source,
-			Path:       path,
+			Path:       sourcePath,
 			Item:       compactor.Get(file),
 		})
 	}
