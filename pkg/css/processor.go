@@ -33,7 +33,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	})
 
 	// Detect imports
-	regex := regexp.MustCompile(`@import ("(.+)"|'(.+)');?`)
+	regex := regexp.MustCompile(`@import ?("(.+)"|'(.+)');?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
@@ -56,17 +56,16 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Resolve processor
 func Resolve(path string, item *compactor.Item) (string, error) {
 
-	destination, err := generic.Resolve(path, item)
+	file := os.Resolve(path, os.Dir(item.Path))
 
-	if err != nil {
-		return destination, err
-	}
-
-	bundle := compactor.GetBundle(path)
+	bundle := compactor.GetBundle(file)
 	hash := bundle.Item.Checksum
 
+	destination := bundle.ToDestination(bundle.Item.Path)
 	destination = bundle.ToHashed(destination, hash)
 	destination = bundle.ToExtension(destination, ".css")
+	destination = bundle.CleanPath(destination)
+	destination = "/" + destination
 
 	return destination, nil
 }

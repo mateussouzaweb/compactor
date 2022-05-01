@@ -36,7 +36,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	var related []compactor.Related
 
 	// Detect imports
-	regex := regexp.MustCompile(`<!-- @import ("(.+)"|'(.+)') -->`)
+	regex := regexp.MustCompile(`<!-- @import ?("(.+)"|'(.+)') -->`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
@@ -54,7 +54,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	}
 
 	// Detect scripts
-	regex = regexp.MustCompile(`(?i)<script(.+)?>(.+)?</script>`)
+	regex = regexp.MustCompile(`<script(.+)?>(.+)?</script>`)
 	matches = regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
@@ -84,7 +84,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	}
 
 	// Detect links
-	regex = regexp.MustCompile(`(?i)<link(.+)?\/?>`)
+	regex = regexp.MustCompile(`<link(.+)?\/?>`)
 	matches = regex.FindAllStringSubmatch(item.Content, -1)
 
 	for _, match := range matches {
