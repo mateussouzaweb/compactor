@@ -167,6 +167,7 @@ func Execute(bundle *compactor.Bundle) error {
 	destination = bundle.ToExtension(destination, ".js")
 
 	err := RunTranspiler(Transpiler{
+		File:        bundle.Item.Path,
 		Content:     bundle.Item.Content,
 		Options:     &config,
 		Destination: destination,

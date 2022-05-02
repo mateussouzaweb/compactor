@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/os"
@@ -9,6 +10,7 @@ import (
 
 // Transpiler struct
 type Transpiler struct {
+	File        string
 	Content     string
 	Options     *TSConfig
 	Destination string
@@ -42,7 +44,7 @@ func RunTranspiler(data Transpiler) error {
 	const fs = require("fs")
 
 	const options = JSON.parse('{OPTIONS}')
-		  options.fileName = '{DESTINATION}'
+		  options.fileName = '{FILE}'
 
 	const source = fs.readFileSync('{SOURCE}', {
 		encoding: 'utf-8'
@@ -52,17 +54,23 @@ func RunTranspiler(data Transpiler) error {
 	const output = result.outputText
 	const sourceMap = result.sourceMapText
 
-	fs.writeFileSync('{OUTPUT}', output)
+	fs.writeFileSync('{DESTINATION}', output)
 
 	if (sourceMap) {
-		fs.writeFileSync('{OUTPUT}.map', sourceMap)
+		fs.writeFileSync('{DESTINATION}.map', sourceMap)
 	}
 	`
 
+	relative, err := filepath.Rel(data.Destination, data.File)
+
+	if err != nil {
+		return err
+	}
+
 	runCode = strings.Replace(runCode, "{OPTIONS}", string(theOptions), 1)
-	runCode = strings.Replace(runCode, "{DESTINATION}", os.File(data.Destination), 1)
+	runCode = strings.Replace(runCode, "{FILE}", relative, 1)
 	runCode = strings.Replace(runCode, "{SOURCE}", sourceFile, 1)
-	runCode = strings.Replace(runCode, "{OUTPUT}", data.Destination, -1)
+	runCode = strings.Replace(runCode, "{DESTINATION}", data.Destination, -1)
 
 	err = os.Write(runFile, runCode, 0775)
 
