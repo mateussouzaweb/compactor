@@ -4,6 +4,15 @@ import (
 	"io/fs"
 )
 
+// Related struct
+type Related struct {
+	Type       string
+	Dependency bool
+	Source     string
+	Path       string
+	Item       *Item
+}
+
 // Item struct
 type Item struct {
 	Path       string      // Full path (root + location)
@@ -21,11 +30,21 @@ type Item struct {
 	Related    []Related   // Related items
 }
 
-// Related struct
-type Related struct {
-	Type       string
-	Dependency bool
-	Source     string
-	Path       string
-	Item       *Item
+// GetRelatedPaths retrieve the related paths of the item
+func (i *Item) GetRelatedPaths(onlyDependencies bool) []string {
+
+	var paths []string
+	for _, related := range i.Related {
+		if onlyDependencies && !related.Dependency {
+			continue
+		}
+
+		paths = append(paths, related.Item.Path)
+
+		if len(related.Item.Related) > 0 {
+			paths = append(paths, related.Item.GetRelatedPaths(onlyDependencies)...)
+		}
+	}
+
+	return paths
 }
