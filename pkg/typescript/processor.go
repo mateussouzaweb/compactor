@@ -158,6 +158,7 @@ func Execute(bundle *compactor.Bundle) error {
 	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
 		config.CompilerOptions["sourceMap"] = true
 		config.CompilerOptions["inlineSources"] = true
+		config.CompilerOptions["sourceRoot"] = ""
 	}
 
 	// Run transpilation

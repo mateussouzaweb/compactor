@@ -44,7 +44,7 @@ func RunTranspiler(data Transpiler) error {
 	const fs = require("fs")
 
 	const options = JSON.parse('{OPTIONS}')
-		  options.fileName = '{FILE}'
+		  options.fileName = '{RELATIVE}'
 
 	const source = fs.readFileSync('{SOURCE}', {
 		encoding: 'utf-8'
@@ -61,15 +61,15 @@ func RunTranspiler(data Transpiler) error {
 	}
 	`
 
-	relative, err := filepath.Rel(data.Destination, data.File)
+	relative, err := filepath.Rel(os.Dir(data.Destination), data.File)
 
 	if err != nil {
 		return err
 	}
 
-	runCode = strings.Replace(runCode, "{OPTIONS}", string(theOptions), 1)
-	runCode = strings.Replace(runCode, "{FILE}", relative, 1)
-	runCode = strings.Replace(runCode, "{SOURCE}", sourceFile, 1)
+	runCode = strings.Replace(runCode, "{OPTIONS}", string(theOptions), -1)
+	runCode = strings.Replace(runCode, "{SOURCE}", sourceFile, -1)
+	runCode = strings.Replace(runCode, "{RELATIVE}", relative, -1)
 	runCode = strings.Replace(runCode, "{DESTINATION}", data.Destination, -1)
 
 	err = os.Write(runFile, runCode, 0775)
