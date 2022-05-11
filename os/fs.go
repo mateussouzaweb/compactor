@@ -1,11 +1,9 @@
 package os
 
 import (
-	"bytes"
 	"io/fs"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -45,26 +43,6 @@ func Read(file string) (string, error) {
 	}
 
 	return string(content), nil
-}
-
-// ReadMany retrieve merged content from file list
-func ReadMany(files []string) (string, error) {
-
-	buf := bytes.NewBuffer(nil)
-
-	for _, filepath := range files {
-
-		content, err := Read(filepath)
-
-		if err != nil {
-			return "", err
-		}
-
-		buf.WriteString(content)
-
-	}
-
-	return buf.String(), nil
 }
 
 // Write content on file
@@ -130,14 +108,9 @@ func Delete(file string) error {
 	return nil
 }
 
-// Move a file to destination
-func Move(origin string, destination string) error {
-	return os.Rename(origin, destination)
-}
-
-// Rename a file name
+// Rename a file path. Overwrite if already exists
 func Rename(origin string, destination string) error {
-	return Move(origin, destination)
+	return os.Rename(origin, destination)
 }
 
 // Chmod apply permissions to file
@@ -201,112 +174,6 @@ func Info(file string) (string, string, fs.FileMode) {
 	return content, checksum, perm
 }
 
-// WalkCallback type
-type WalkCallback func(path string) error
-
-// Walk find files in path and process callback for every result
-func Walk(root string, callback WalkCallback) error {
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		return callback(path)
-	})
-
-	return err
-}
-
-// List walks on path and return every found file
-func List(root string) ([]string, error) {
-
-	var files []string
-
-	err := Walk(root, func(path string) error {
-		files = append(files, path)
-		return nil
-	})
-
-	return files, err
-}
-
-// Find retrieve files from path that exactly match names
-func Find(root string, names []string) ([]string, error) {
-
-	var files []string
-
-	err := Walk(root, func(path string) error {
-
-		name := filepath.Base(path)
-
-		for _, item := range names {
-			if name == item {
-				files = append(files, path)
-				break
-			}
-		}
-
-		return nil
-	})
-
-	return files, err
-}
-
-// FindMatch retrieve files from path that match patterns
-func FindMatch(root string, patterns []string) ([]string, error) {
-
-	var files []string
-
-	err := Walk(root, func(thePath string) error {
-
-		for _, pattern := range patterns {
-
-			file := strings.Replace(thePath, root, "", 1)
-			file = strings.TrimLeft(file, "/")
-
-			matched, err := path.Match(pattern, file)
-
-			if err != nil {
-				return err
-			}
-
-			if matched {
-				files = append(files, thePath)
-				break
-			}
-
-		}
-
-		return nil
-	})
-
-	return files, err
-}
-
-// EnsureDirectory makes sure directory exists from file path
-func EnsureDirectory(file string) error {
-
-	path := filepath.Dir(file)
-
-	if !Exist(path) {
-
-		err := os.MkdirAll(path, 0775)
-
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-}
-
 // Resolve will check paths until file is detected
 func Resolve(file string, path string) string {
 
@@ -318,4 +185,26 @@ func Resolve(file string, path string) string {
 	}
 
 	return Resolve(file, Dir(path))
+}
+
+// List walks on path and return every found file
+func List(root string) ([]string, error) {
+
+	var files []string
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		files = append(files, path)
+		return nil
+	})
+
+	return files, err
 }

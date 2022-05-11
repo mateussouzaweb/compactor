@@ -7,7 +7,7 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-// WalkCallback type
+// WatchCallback type
 type WatchCallback func(path string) error
 
 // Watch check for changes on path files and trigger events on change or on delete file

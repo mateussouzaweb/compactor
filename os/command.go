@@ -57,3 +57,21 @@ func TemporaryFile(file string) string {
 	fileName := Name(file) + "-" + RandomString(10) + Extension(file)
 	return filepath.Join(os.TempDir(), fileName)
 }
+
+// EnsureDirectory makes sure directory exists from file path
+func EnsureDirectory(file string) error {
+
+	path := filepath.Dir(file)
+
+	if !Exist(path) {
+
+		err := os.MkdirAll(path, 0775)
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
