@@ -38,12 +38,13 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	// Detect imports
 	regex := regexp.MustCompile(`<!-- @import ?("(.+)"|'(.+)') -->`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	extensions := []string{".html", ".htm"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
 
-		file := os.Resolve(path, os.Dir(item.Path))
+		file := os.Resolve(path, extensions, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "partial",
 			Dependency: true,
@@ -56,6 +57,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	// Detect scripts
 	regex = regexp.MustCompile(`<script(.+)?>(.+)?</script>`)
 	matches = regex.FindAllStringSubmatch(item.Content, -1)
+	extensions = []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
 
 	for _, match := range matches {
 
@@ -72,7 +74,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := os.Resolve(src, os.Dir(item.Path))
+		file := os.Resolve(src, extensions, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "other",
 			Dependency: false,
@@ -101,7 +103,7 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := os.Resolve(href, os.Dir(item.Path))
+		file := os.Resolve(href, []string{}, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "other",
 			Dependency: false,

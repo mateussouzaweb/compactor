@@ -81,13 +81,14 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	// Detect imports
 	regex := regexp.MustCompile(`import ?((.+) ?from ?)?("(.+)"|'(.+)');?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	extensions := []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[3], `'"`)
 		thePath := FindRealPath(path)
 
-		file := os.Resolve(thePath, os.Dir(item.Path))
+		file := os.Resolve(thePath, extensions, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "import",
 			Dependency: false,
@@ -103,8 +104,9 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Resolve processor
 func Resolve(path string, item *compactor.Item) (string, error) {
 
+	extensions := []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
 	path = FindRealPath(path)
-	file := os.Resolve(path, os.Dir(item.Path))
+	file := os.Resolve(path, extensions, os.Dir(item.Path))
 
 	bundle := compactor.GetBundle(file)
 	hash := bundle.Item.Checksum
@@ -130,11 +132,6 @@ func FindRealPath(path string) string {
 			replace := strings.Trim(value, "*")
 			path = strings.Replace(path, find, replace, 1)
 		}
-	}
-
-	// Append extension if not declared
-	if os.Extension(path) == "" {
-		path += ".ts"
 	}
 
 	return path
@@ -255,7 +252,7 @@ func Optimize(bundle *compactor.Bundle) error {
 func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "typescript",
-		Extensions: []string{".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"},
+		Extensions: []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"},
 		Init:       Init,
 		Related:    Related,
 		Resolve:    Resolve,

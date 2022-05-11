@@ -174,17 +174,24 @@ func Info(file string) (string, string, fs.FileMode) {
 	return content, checksum, perm
 }
 
-// Resolve will check paths until file is detected
-func Resolve(file string, path string) string {
+// Resolve will check paths with possible extensions until file is detected
+func Resolve(file string, extensions []string, path string) string {
 
 	if Exist(filepath.Join(path, file)) {
 		return filepath.Join(path, file)
 	}
+
+	for _, extension := range extensions {
+		if Exist(filepath.Join(path, file+extension)) {
+			return filepath.Join(path, file+extension)
+		}
+	}
+
 	if len(path) <= 1 {
 		return file
 	}
 
-	return Resolve(file, Dir(path))
+	return Resolve(file, extensions, Dir(path))
 }
 
 // List walks on path and return every found file

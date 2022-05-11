@@ -35,12 +35,13 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	// Detect imports
 	regex := regexp.MustCompile(`@import ?("(.+)"|'(.+)');?`)
 	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	extensions := []string{".scss", ".sass", ".css"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
 
-		file := os.Resolve(path, os.Dir(item.Path))
+		file := os.Resolve(path, extensions, os.Dir(item.Path))
 		related = append(related, compactor.Related{
 			Type:       "import",
 			Dependency: true,
@@ -56,7 +57,8 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 // Resolve processor
 func Resolve(path string, item *compactor.Item) (string, error) {
 
-	file := os.Resolve(path, os.Dir(item.Path))
+	extensions := []string{".scss", ".sass", ".css"}
+	file := os.Resolve(path, extensions, os.Dir(item.Path))
 
 	bundle := compactor.GetBundle(file)
 	hash := bundle.Item.Checksum
