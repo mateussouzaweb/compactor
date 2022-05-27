@@ -7,14 +7,13 @@ import (
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
-	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
 var _tsConfig *TSConfig
 var _tsConfigFile string
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 
 	err := os.NodeRequire("tsc", "typescript")
 
@@ -28,7 +27,7 @@ func Init(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	return InitConfig(bundle.Source.Path)
+	return InitConfig(options.Source.Path)
 }
 
 // InitConfig find and read tsconfig file from given path
@@ -41,14 +40,25 @@ func InitConfig(path string) error {
 	return err
 }
 
+// Resolve processor
+func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
+
+	hash := file.Checksum
+	destination := options.ToDestination(file.Path)
+	destination = options.ToHashed(destination, hash)
+	destination = options.ToExtension(destination, ".js")
+
+	return destination, nil
+}
+
 // Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
+func Related(options *compactor.Options, file *compactor.File) ([]compactor.Related, error) {
 
 	var related []compactor.Related
 
 	// Read config if not loaded yet
 	if _tsConfigFile == "" {
-		err := InitConfig(item.Root)
+		err := InitConfig(file.Root)
 
 		if err != nil {
 			return related, err
@@ -56,68 +66,50 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 	}
 
 	// Add possible source map
-	extension := os.Extension(item.Path)
-	file := strings.TrimSuffix(item.Path, extension)
-	file = file + ".js.map"
+	filemap := strings.TrimSuffix(file.Path, file.Extension)
+	filemap = filemap + ".js.map"
 
 	related = append(related, compactor.Related{
 		Type:       "source-map",
 		Dependency: true,
 		Source:     "",
-		Path:       os.File(file),
-		Item:       compactor.Get(file),
+		Path:       os.File(filemap),
+		File:       compactor.GetFile(filemap),
 	})
 
 	// Add possible type declaration
-	file = item.Path + ".d"
+	declaration := file.Path + ".d"
 	related = append(related, compactor.Related{
 		Type:       "declaration",
 		Dependency: true,
 		Source:     "",
-		Path:       os.File(file),
-		Item:       compactor.Get(file),
+		Path:       os.File(declaration),
+		File:       compactor.GetFile(declaration),
 	})
 
 	// Detect imports
 	regex := regexp.MustCompile(`import ?((.+) ?from ?)?("(.+)"|'(.+)');?`)
-	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	matches := regex.FindAllStringSubmatch(file.Content, -1)
 	extensions := []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[3], `'"`)
 		thePath := FindRealPath(path)
+		filepath := os.Resolve(thePath, extensions, os.Dir(file.Path))
 
-		file := os.Resolve(thePath, extensions, os.Dir(item.Path))
-		related = append(related, compactor.Related{
-			Type:       "import",
-			Dependency: false,
-			Source:     source,
-			Path:       path,
-			Item:       compactor.Get(file),
-		})
+		if compactor.GetFile(filepath).Path != "" {
+			related = append(related, compactor.Related{
+				Type:       "import",
+				Dependency: false,
+				Source:     source,
+				Path:       path,
+				File:       compactor.GetFile(filepath),
+			})
+		}
 	}
 
 	return related, nil
-}
-
-// Resolve processor
-func Resolve(path string, item *compactor.Item) (string, error) {
-
-	extensions := []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
-	path = FindRealPath(path)
-	file := os.Resolve(path, extensions, os.Dir(item.Path))
-
-	bundle := compactor.GetBundle(file)
-	hash := bundle.Item.Checksum
-
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-	destination = bundle.CleanPath(destination)
-	destination = "/" + destination
-
-	return destination, nil
 }
 
 // FindRealPath transform TSConfig paths into real path values
@@ -137,8 +129,8 @@ func FindRealPath(path string) string {
 	return path
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
 	// Copy from user config file and make sure output is present
 	config := *_tsConfig
@@ -152,23 +144,18 @@ func Execute(bundle *compactor.Bundle) error {
 	config.CompilerOptions["isolatedModules"] = true
 
 	// Enable source maps
-	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
+	if options.ShouldGenerateSourceMap(file.Path) {
 		config.CompilerOptions["sourceMap"] = true
 		config.CompilerOptions["inlineSources"] = true
 		config.CompilerOptions["sourceRoot"] = ""
 	}
 
 	// Run transpilation
-	hash := bundle.Item.Checksum
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-
 	err := RunTranspiler(Transpiler{
-		File:        bundle.Item.Path,
-		Content:     bundle.Item.Content,
-		Options:     &config,
-		Destination: destination,
+		Config:      &config,
+		File:        file.Path,
+		Content:     file.Content,
+		Destination: file.Destination,
 	})
 
 	if err != nil {
@@ -176,15 +163,11 @@ func Execute(bundle *compactor.Bundle) error {
 	}
 
 	// Update paths after transpile code with correct final destinations
-	for _, related := range bundle.Item.Related {
-		if related.Item.Exists && related.Type == "import" {
+	for _, related := range file.Related {
+		if related.File.Exists && related.Type == "import" {
 
 			fromPath := related.Path
-			toPath, err := Resolve(fromPath, bundle.Item)
-
-			if err != nil {
-				return err
-			}
+			toPath := options.CleanPath(related.File.Destination)
 
 			oldSource := related.Source
 			firstIndex := strings.LastIndex(oldSource, fromPath)
@@ -192,7 +175,7 @@ func Execute(bundle *compactor.Bundle) error {
 			newSource := oldSource[:firstIndex] + toPath + oldSource[lastIndex:]
 
 			err = os.Replace(
-				destination,
+				file.Destination,
 				oldSource,
 				newSource,
 			)
@@ -208,32 +191,26 @@ func Execute(bundle *compactor.Bundle) error {
 }
 
 // Optimize processor
-func Optimize(bundle *compactor.Bundle) error {
+func Optimize(options *compactor.Options, file *compactor.File) error {
 
-	if !bundle.ShouldCompress(bundle.Item.Path) {
+	if !options.ShouldCompress(file.Path) {
 		return nil
 	}
 
-	hash := bundle.Item.Checksum
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-
 	args := []string{
-		destination,
-		"--output", destination,
+		file.Destination,
+		"--output", file.Destination,
 		"--compress",
 		"--comments",
 	}
 
-	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
+	if options.ShouldGenerateSourceMap(file.Path) {
 
-		file := os.File(destination)
 		sourceOptions := strings.Join([]string{
 			"includeSources",
-			"filename='" + file + ".map'",
-			"url='" + file + ".map'",
-			"content='" + destination + ".map'",
+			"filename='" + file.File + ".map'",
+			"url='" + file.File + ".map'",
+			"content='" + file.Destination + ".map'",
 		}, ",")
 
 		args = append(args, "--source-map", sourceOptions)
@@ -254,10 +231,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "typescript",
 		Extensions: []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"},
 		Init:       Init,
-		Related:    Related,
 		Resolve:    Resolve,
-		Execute:    Execute,
+		Related:    Related,
+		Transform:  Transform,
 		Optimize:   Optimize,
-		Delete:     generic.Delete,
 	}
 }

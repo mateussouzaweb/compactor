@@ -8,7 +8,7 @@ import (
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 
 	err := os.NodeRequire("optipng", "optipng-bin")
 
@@ -20,26 +20,27 @@ func Init(bundle *compactor.Bundle) error {
 }
 
 // Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
+func Related(options *compactor.Options, file *compactor.File) ([]compactor.Related, error) {
 
 	var related []compactor.Related
 
+	// Add possible progressive image
+	filepath := file.Path + ".webp"
 	related = append(related, compactor.Related{
 		Type:       "alternative",
 		Dependency: true,
 		Source:     "",
-		Path:       item.File + ".webp",
-		Item:       compactor.Get(item.Path + ".webp"),
+		Path:       os.File(filepath),
+		File:       compactor.GetFile(filepath),
 	})
 
 	return related, nil
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	err := os.Copy(bundle.Item.Path, destination)
+	err := os.Copy(file.Path, file.Destination)
 
 	if err != nil {
 		return err
@@ -49,14 +50,13 @@ func Execute(bundle *compactor.Bundle) error {
 }
 
 // Optimize processor
-func Optimize(bundle *compactor.Bundle) error {
+func Optimize(options *compactor.Options, file *compactor.File) error {
 
-	if bundle.ShouldCompress(bundle.Item.Path) {
-		destination := bundle.ToDestination(bundle.Item.Path)
+	if options.ShouldCompress(file.Path) {
 		_, err := os.Exec(
 			"optipng",
 			"--quiet",
-			destination,
+			file.Destination,
 		)
 
 		if err != nil {
@@ -64,9 +64,8 @@ func Optimize(bundle *compactor.Bundle) error {
 		}
 	}
 
-	if bundle.ShouldGenerateProgressive(bundle.Item.Path) {
-		destination := bundle.ToDestination(bundle.Item.Path)
-		err := webp.CreateCopy(bundle.Item.Path, destination, 75)
+	if options.ShouldGenerateProgressive(file.Path) {
+		err := webp.CreateCopy(file.Path, file.Destination, 75)
 
 		if err != nil {
 			return err
@@ -82,10 +81,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "png",
 		Extensions: []string{".png"},
 		Init:       Init,
-		Related:    Related,
 		Resolve:    generic.Resolve,
-		Execute:    Execute,
+		Related:    Related,
+		Transform:  Transform,
 		Optimize:   Optimize,
-		Delete:     generic.Delete,
 	}
 }

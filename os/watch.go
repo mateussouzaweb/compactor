@@ -1,64 +1,73 @@
 package os
 
 import (
-	"log"
 	"time"
-
-	"github.com/radovskyb/watcher"
 )
 
+// Watch changes tracking
+var watchTrack = map[string]string{}
+
 // WatchCallback type
-type WatchCallback func(path string) error
+type WatchCallback func(path string, action string) error
 
-// Watch check for changes on path files and trigger events on change or on delete file
-func Watch(path string, interval time.Duration, onChange WatchCallback, onDelete WatchCallback) {
+// WatchCheckFile will check if file has been changed and run callback once necessary
+func WatchCheckFile(file string, onChange WatchCallback) error {
 
-	w := watcher.New()
-	// TODO: learn from https://github.com/Shopify/themekit/blob/master/src/file/watcher.go
+	_, checksum, _ := Info(file)
 
-	go func() {
+	if current, ok := watchTrack[file]; ok {
+		if current != checksum {
+			watchTrack[file] = checksum
+			onChange(file, "updated")
+			return nil
+		} else {
+			return nil
+		}
+	}
+
+	watchTrack[file] = checksum
+	onChange(file, "added")
+
+	return nil
+}
+
+// Watch will check if there is any change in the files inside path
+func Watch(root string, onChange WatchCallback) error {
+
+	// Fill initial checksums
+	files, err := List(root)
+
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		_, checksum, _ := Info(file)
+		watchTrack[file] = checksum
+	}
+
+	// Start tracking
+	ticker := time.NewTicker(500 * time.Millisecond)
+	done := make(chan bool)
+
+	go func() error {
 		for {
 			select {
-			case event := <-w.Event:
+			case <-done:
+				return nil
+			case <-ticker.C:
+				files, err := List(root)
 
-				if !event.IsDir() {
-
-					if event.Op&watcher.Create == watcher.Create {
-						onChange(event.Path)
-					} else if event.Op&watcher.Write == watcher.Write {
-						onChange(event.Path)
-					} else if event.Op&watcher.Chmod == watcher.Chmod {
-						onChange(event.Path)
-					} else if event.Op&watcher.Rename == watcher.Rename {
-						// TODO: not processing, maybe is a bug on the extension?
-						onDelete(event.OldPath)
-						onChange(event.Path)
-					} else if event.Op&watcher.Move == watcher.Move {
-						// TODO: not processing, maybe is a bug on the extension?
-						onDelete(event.OldPath)
-						onChange(event.Path)
-					} else if event.Op&watcher.Remove == watcher.Remove {
-						onDelete(event.Path)
-					}
-
+				if err != nil {
+					return err
 				}
 
-			case err := <-w.Error:
-				log.Fatalln(err)
-			case <-w.Closed:
-				return
+				for _, file := range files {
+					WatchCheckFile(file, onChange)
+				}
 			}
 		}
 	}()
 
-	err := w.AddRecursive(path)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	err = w.Start(interval)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	return nil
 }

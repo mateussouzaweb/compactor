@@ -9,7 +9,7 @@ import (
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 	return os.NodeRequire("cwebp", "cwebp-bin")
 }
 
@@ -26,11 +26,10 @@ func CreateCopy(source string, destination string, quality int) error {
 	return err
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	err := os.Copy(bundle.Item.Path, destination)
+	err := os.Copy(file.Path, file.Destination)
 
 	if err != nil {
 		return err
@@ -45,10 +44,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "webp",
 		Extensions: []string{".webp"},
 		Init:       Init,
-		Related:    generic.Related,
 		Resolve:    generic.Resolve,
-		Execute:    Execute,
+		Related:    generic.Related,
+		Transform:  Transform,
 		Optimize:   generic.Optimize,
-		Delete:     generic.Delete,
 	}
 }

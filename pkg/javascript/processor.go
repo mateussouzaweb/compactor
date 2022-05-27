@@ -10,101 +10,89 @@ import (
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 	return os.NodeRequire("terser", "terser")
 }
 
+// Resolve processor
+func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
+
+	hash := file.Checksum
+	destination := options.ToDestination(file.Path)
+	destination = options.ToHashed(destination, hash)
+	destination = options.ToExtension(destination, ".js")
+
+	return destination, nil
+}
+
 // Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
+func Related(options *compactor.Options, file *compactor.File) ([]compactor.Related, error) {
 
 	var related []compactor.Related
 
 	// Add possible source map
-	extension := os.Extension(item.Path)
-	file := strings.TrimSuffix(item.Path, extension)
-	file = file + ".js.map"
+	filemap := strings.TrimSuffix(file.Path, file.Extension)
+	filemap = filemap + ".js.map"
 
 	related = append(related, compactor.Related{
 		Type:       "source-map",
 		Dependency: true,
 		Source:     "",
-		Path:       os.File(file),
-		Item:       compactor.Get(file),
+		Path:       os.File(filemap),
+		File:       compactor.GetFile(filemap),
 	})
 
 	// Detect imports
 	regex := regexp.MustCompile(`import ?((.+) ?from ?)?("(.+)"|'(.+)');?`)
-	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	matches := regex.FindAllStringSubmatch(file.Content, -1)
 	extensions := []string{".js", ".mjs"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[3], `'"`)
+		filepath := os.Resolve(path, extensions, os.Dir(file.Path))
 
-		file := os.Resolve(path, extensions, os.Dir(item.Path))
-		related = append(related, compactor.Related{
-			Type:       "import",
-			Dependency: false,
-			Source:     source,
-			Path:       path,
-			Item:       compactor.Get(file),
-		})
+		if compactor.GetFile(filepath).Path != "" {
+			related = append(related, compactor.Related{
+				Type:       "import",
+				Dependency: false,
+				Source:     source,
+				Path:       path,
+				File:       compactor.GetFile(filepath),
+			})
+		}
 	}
 
 	return related, nil
 }
 
-// Resolve processor
-func Resolve(path string, item *compactor.Item) (string, error) {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
-	extensions := []string{".js", ".mjs"}
-	file := os.Resolve(path, extensions, os.Dir(item.Path))
+	files := []string{file.Path}
 
-	bundle := compactor.GetBundle(file)
-	hash := bundle.Item.Checksum
-
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-	destination = bundle.CleanPath(destination)
-	destination = "/" + destination
-
-	return destination, nil
-}
-
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
-
-	hash := bundle.Item.Checksum
-	destination := bundle.ToDestination(bundle.Item.Path)
-	destination = bundle.ToHashed(destination, hash)
-	destination = bundle.ToExtension(destination, ".js")
-
-	files := []string{bundle.Item.Path}
-
-	for _, related := range bundle.Item.Related {
-		if related.Item.Exists && related.Type == "import" {
-			files = append(files, related.Item.Path)
+	for _, related := range file.Related {
+		if related.File.Exists && related.Type == "import" {
+			files = append(files, related.File.Path)
 		}
 	}
 
 	args := []string{}
 	args = append(args, files...)
-	args = append(args, "--output", destination)
+	args = append(args, "--output", file.Destination)
 
-	if bundle.ShouldCompress(bundle.Item.Path) {
+	if options.ShouldCompress(file.Path) {
 		args = append(args, "--compress", "--comments")
 	} else {
 		args = append(args, "--beautify")
 	}
 
-	if bundle.ShouldGenerateSourceMap(bundle.Item.Path) {
-		file := os.File(destination)
+	if options.ShouldGenerateSourceMap(file.Path) {
 		args = append(args, "--source-map", strings.Join([]string{
 			"includeSources",
-			"base='" + bundle.Destination.Path + "'",
-			"filename='" + file + ".map'",
-			"url='" + file + ".map'",
+			"base='" + options.Destination.Path + "'",
+			"filename='" + file.File + ".map'",
+			"url='" + file.File + ".map'",
 		}, ","))
 	}
 
@@ -126,10 +114,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "javascript",
 		Extensions: []string{".js", ".mjs"},
 		Init:       Init,
-		Related:    Related,
 		Resolve:    Resolve,
-		Execute:    Execute,
+		Related:    Related,
+		Transform:  Transform,
 		Optimize:   generic.Optimize,
-		Delete:     generic.Delete,
 	}
 }

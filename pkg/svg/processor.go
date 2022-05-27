@@ -7,7 +7,7 @@ import (
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 	return os.NodeRequire("svgo", "svgo")
 }
 
@@ -50,21 +50,21 @@ func Minify(content string) (string, error) {
 }
 
 // Optimize processor
-func Optimize(bundle *compactor.Bundle) error {
+func Optimize(options *compactor.Options, file *compactor.File) error {
 
-	if !bundle.ShouldCompress(bundle.Item.Path) {
+	if !options.ShouldCompress(file.Path) {
 		return nil
 	}
 
-	content := bundle.Item.Content
+	content := file.Content
 	content, err := Minify(content)
 
 	if err != nil {
 		return err
 	}
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	perm := bundle.Item.Permission
+	destination := file.Destination
+	perm := file.Permission
 	err = os.Write(destination, content, perm)
 
 	if err != nil {
@@ -80,10 +80,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "svg",
 		Extensions: []string{".svg"},
 		Init:       Init,
-		Related:    generic.Related,
 		Resolve:    generic.Resolve,
-		Execute:    generic.Execute,
+		Related:    generic.Related,
+		Transform:  generic.Transform,
 		Optimize:   Optimize,
-		Delete:     generic.Delete,
 	}
 }

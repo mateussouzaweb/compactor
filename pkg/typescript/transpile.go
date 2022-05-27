@@ -10,9 +10,9 @@ import (
 
 // Transpiler struct
 type Transpiler struct {
+	Config      *TSConfig
 	File        string
 	Content     string
-	Options     *TSConfig
 	Destination string
 }
 
@@ -31,7 +31,7 @@ func RunTranspiler(data Transpiler) error {
 		return err
 	}
 
-	theOptions, err := json.Marshal(data.Options)
+	config, err := json.Marshal(data.Config)
 
 	if err != nil {
 		return err
@@ -43,14 +43,14 @@ func RunTranspiler(data Transpiler) error {
 	const ts = require(root + "/typescript")
 	const fs = require("fs")
 
-	const options = JSON.parse('{OPTIONS}')
-		  options.fileName = '{RELATIVE}'
+	const config = JSON.parse('{CONFIG}')
+		  config.fileName = '{RELATIVE}'
 
 	const source = fs.readFileSync('{SOURCE}', {
 		encoding: 'utf-8'
 	})
 
-	const result = ts.transpileModule(source, options)
+	const result = ts.transpileModule(source, config)
 	const output = result.outputText
 	const sourceMap = result.sourceMapText
 
@@ -67,7 +67,7 @@ func RunTranspiler(data Transpiler) error {
 		return err
 	}
 
-	runCode = strings.Replace(runCode, "{OPTIONS}", string(theOptions), -1)
+	runCode = strings.Replace(runCode, "{CONFIG}", string(config), -1)
 	runCode = strings.Replace(runCode, "{SOURCE}", sourceFile, -1)
 	runCode = strings.Replace(runCode, "{RELATIVE}", relative, -1)
 	runCode = strings.Replace(runCode, "{DESTINATION}", data.Destination, -1)

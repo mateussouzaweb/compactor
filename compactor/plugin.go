@@ -1,31 +1,32 @@
 package compactor
 
 // Init function
-type InitFunc = func(bundle *Bundle) error
-
-// Related function
-type RelatedFunc = func(item *Item) ([]Related, error)
+// Used to start up the plugin and check for their dependencies
+type InitFunc = func(options *Options) error
 
 // Resolve function
-type ResolveFunc = func(file string, item *Item) (string, error)
+// Used to transform the source path to the final destination path
+type ResolveFunc = func(options *Options, file *File) (string, error)
 
-// Execute function
-type ExecuteFunc = func(bundle *Bundle) error
+// Related function
+// Detects and generates the list of related files to the given item, being a dependency or not
+type RelatedFunc = func(options *Options, file *File) ([]Related, error)
+
+// Transform function
+// Used to transform the file content to the final format by applying compilation if necessary
+type TransformFunc = func(options *Options, file *File) error
 
 // Optimize function
-type OptimizeFunc = func(bundle *Bundle) error
-
-// Delete function
-type DeleteFunc = func(bundle *Bundle) error
+// Used to run optimizations algorithms to compress file
+type OptimizeFunc = func(options *Options, file *File) error
 
 // Plugin struct
 type Plugin struct {
 	Namespace  string
 	Extensions []string
 	Init       InitFunc
-	Related    RelatedFunc
 	Resolve    ResolveFunc
-	Execute    ExecuteFunc
+	Related    RelatedFunc
+	Transform  TransformFunc
 	Optimize   OptimizeFunc
-	Delete     DeleteFunc
 }

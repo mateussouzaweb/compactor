@@ -7,15 +7,14 @@ import (
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 	return os.NodeRequire("gifsicle", "gifsicle")
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	err := os.Copy(bundle.Item.Path, destination)
+	err := os.Copy(file.Path, file.Destination)
 
 	if err != nil {
 		return err
@@ -25,18 +24,17 @@ func Execute(bundle *compactor.Bundle) error {
 }
 
 // Optimize processor
-func Optimize(bundle *compactor.Bundle) error {
+func Optimize(options *compactor.Options, file *compactor.File) error {
 
-	if !bundle.ShouldCompress(bundle.Item.Path) {
+	if !options.ShouldCompress(file.Path) {
 		return nil
 	}
 
-	destination := bundle.ToDestination(bundle.Item.Path)
 	_, err := os.Exec(
 		"gifsicle",
 		"-03",
-		destination,
-		"-o", destination,
+		file.Destination,
+		"-o", file.Destination,
 	)
 
 	if err != nil {
@@ -52,10 +50,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "gif",
 		Extensions: []string{".gif"},
 		Init:       Init,
-		Related:    generic.Related,
 		Resolve:    generic.Resolve,
-		Execute:    Execute,
+		Related:    generic.Related,
+		Transform:  Transform,
 		Optimize:   Optimize,
-		Delete:     generic.Delete,
 	}
 }

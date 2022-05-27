@@ -18,13 +18,13 @@ func Exec(cmd string, args ...string) (string, error) {
 	output, err := result.CombinedOutput()
 
 	if err != nil {
-		return "", fmt.Errorf("command error: %s ...\n%v\n%s", cmd, err, string(output))
+		return "", fmt.Errorf("command error: %s ...\n%v\n%s", result.Args, err, string(output))
 	}
 
 	return string(output), nil
 }
 
-// Checksum retrive the checksum for given content
+// Checksum retrieve the checksum for given content
 func Checksum(content string) (string, error) {
 
 	sum := md5.New()
@@ -74,4 +74,16 @@ func EnsureDirectory(file string) error {
 	}
 
 	return nil
+}
+
+// NodeRequire check if node package command exists, otherwise, try to install the package
+func NodeRequire(command string, pkg string) error {
+
+	_, err := exec.LookPath(command)
+
+	if err != nil {
+		_, err = Exec("npm", "install", "-g", pkg)
+	}
+
+	return err
 }

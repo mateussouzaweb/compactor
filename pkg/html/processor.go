@@ -6,14 +6,11 @@ import (
 
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
-	"github.com/mateussouzaweb/compactor/pkg/css"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
-	"github.com/mateussouzaweb/compactor/pkg/javascript"
-	"github.com/mateussouzaweb/compactor/pkg/typescript"
 )
 
 // Init processor
-func Init(bundle *compactor.Bundle) error {
+func Init(options *compactor.Options) error {
 	return os.NodeRequire("html-minifier", "html-minifier")
 }
 
@@ -31,32 +28,34 @@ func ExtractAttribute(html string, attribute string, defaultValue string) string
 }
 
 // Related processor
-func Related(item *compactor.Item) ([]compactor.Related, error) {
+func Related(options *compactor.Options, file *compactor.File) ([]compactor.Related, error) {
 
 	var related []compactor.Related
 
 	// Detect imports
 	regex := regexp.MustCompile(`<!-- @import ?("(.+)"|'(.+)') -->`)
-	matches := regex.FindAllStringSubmatch(item.Content, -1)
+	matches := regex.FindAllStringSubmatch(file.Content, -1)
 	extensions := []string{".html", ".htm"}
 
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
+		filepath := os.Resolve(path, extensions, os.Dir(file.Path))
 
-		file := os.Resolve(path, extensions, os.Dir(item.Path))
-		related = append(related, compactor.Related{
-			Type:       "partial",
-			Dependency: true,
-			Source:     source,
-			Path:       path,
-			Item:       compactor.Get(file),
-		})
+		if compactor.GetFile(filepath).Path != "" {
+			related = append(related, compactor.Related{
+				Type:       "partial",
+				Dependency: true,
+				Source:     source,
+				Path:       path,
+				File:       compactor.GetFile(filepath),
+			})
+		}
 	}
 
 	// Detect scripts
 	regex = regexp.MustCompile(`<script(.+)?>(.+)?</script>`)
-	matches = regex.FindAllStringSubmatch(item.Content, -1)
+	matches = regex.FindAllStringSubmatch(file.Content, -1)
 	extensions = []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"}
 
 	for _, match := range matches {
@@ -74,20 +73,23 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := os.Resolve(src, extensions, os.Dir(item.Path))
-		related = append(related, compactor.Related{
-			Type:       "other",
-			Dependency: false,
-			Source:     code,
-			Path:       src,
-			Item:       compactor.Get(file),
-		})
+		filepath := os.Resolve(src, extensions, os.Dir(file.Path))
+
+		if compactor.GetFile(filepath).Path != "" {
+			related = append(related, compactor.Related{
+				Type:       "other",
+				Dependency: false,
+				Source:     code,
+				Path:       src,
+				File:       compactor.GetFile(filepath),
+			})
+		}
 
 	}
 
 	// Detect links
 	regex = regexp.MustCompile(`<link(.+)?\/?>`)
-	matches = regex.FindAllStringSubmatch(item.Content, -1)
+	matches = regex.FindAllStringSubmatch(file.Content, -1)
 
 	for _, match := range matches {
 
@@ -103,14 +105,17 @@ func Related(item *compactor.Item) ([]compactor.Related, error) {
 			continue
 		}
 
-		file := os.Resolve(href, []string{}, os.Dir(item.Path))
-		related = append(related, compactor.Related{
-			Type:       "other",
-			Dependency: false,
-			Source:     code,
-			Path:       href,
-			Item:       compactor.Get(file),
-		})
+		filepath := os.Resolve(href, []string{}, os.Dir(file.Path))
+
+		if compactor.GetFile(filepath).Path != "" {
+			related = append(related, compactor.Related{
+				Type:       "other",
+				Dependency: false,
+				Source:     code,
+				Path:       href,
+				File:       compactor.GetFile(filepath),
+			})
+		}
 
 	}
 
@@ -155,22 +160,22 @@ func Minify(content string) (string, error) {
 }
 
 // MergeContent returns the content of the item with the replaced partials dependencies
-func MergeContent(item *compactor.Item) string {
+func MergeContent(file *compactor.File) string {
 
-	if !item.Exists {
+	if !file.Exists {
 		return ""
 	}
 
-	content := item.Content
+	content := file.Content
 
-	for _, related := range item.Related {
-		if related.Type == "partial" && related.Item.Exists {
+	for _, related := range file.Related {
+		if related.Type == "partial" && related.File.Exists {
 
 			// Solves recursively
 			content = strings.Replace(
 				content,
 				related.Source,
-				MergeContent(related.Item),
+				MergeContent(related.File),
 				1,
 			)
 
@@ -180,47 +185,25 @@ func MergeContent(item *compactor.Item) string {
 	return content
 }
 
-// Execute processor
-func Execute(bundle *compactor.Bundle) error {
+// Transform processor
+func Transform(options *compactor.Options, file *compactor.File) error {
 
-	content := MergeContent(bundle.Item)
+	content := MergeContent(file)
 
-	for _, related := range bundle.Item.Related {
+	for _, related := range file.Related {
 
 		if related.Dependency {
 			continue
 		}
 
-		var err error
-		var file string
-
-		extension := os.Extension(related.Path)
 		path := related.Path
-
-		if extension == ".css" {
-			file, err = css.Resolve(path, bundle.Item)
-		} else if extension == ".sass" || extension == ".scss" {
-			file, err = css.Resolve(path, bundle.Item)
-		} else if extension == ".js" || extension == ".mjs" {
-			file, err = javascript.Resolve(path, bundle.Item)
-		} else if extension == ".ts" || extension == ".mts" {
-			file, err = typescript.Resolve(path, bundle.Item)
-		} else if extension == ".tsx" || extension == ".jsx" {
-			file, err = typescript.Resolve(path, bundle.Item)
-		} else {
-			continue
-		}
-
-		if err != nil {
-			return err
-		}
-
-		content = strings.Replace(content, path, file, 1)
+		destination := "/" + options.CleanPath(related.File.Destination)
+		content = strings.Replace(content, path, destination, 1)
 
 	}
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	perm := bundle.Item.Permission
+	destination := file.Destination
+	perm := file.Permission
 	err := os.Write(destination, content, perm)
 
 	if err != nil {
@@ -231,14 +214,13 @@ func Execute(bundle *compactor.Bundle) error {
 }
 
 // Optimize processor
-func Optimize(bundle *compactor.Bundle) error {
+func Optimize(options *compactor.Options, file *compactor.File) error {
 
-	if !bundle.ShouldCompress(bundle.Item.Path) {
+	if !options.ShouldCompress(file.Path) {
 		return nil
 	}
 
-	destination := bundle.ToDestination(bundle.Item.Path)
-	content, err := os.Read(destination)
+	content, err := os.Read(file.Destination)
 
 	if err != nil {
 		return err
@@ -250,8 +232,8 @@ func Optimize(bundle *compactor.Bundle) error {
 		return err
 	}
 
-	perm := bundle.Item.Permission
-	err = os.Write(destination, content, perm)
+	perm := file.Permission
+	err = os.Write(file.Destination, content, perm)
 
 	if err != nil {
 		return err
@@ -266,10 +248,9 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "html",
 		Extensions: []string{".html", ".htm"},
 		Init:       Init,
-		Related:    Related,
 		Resolve:    generic.Resolve,
-		Execute:    Execute,
+		Related:    Related,
+		Transform:  Transform,
 		Optimize:   Optimize,
-		Delete:     generic.Delete,
 	}
 }
