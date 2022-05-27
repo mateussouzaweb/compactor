@@ -1,10 +1,10 @@
 # Compactor - Frontend compression without pain
 
-*Compactor* is a efficient alternative to generate fully compressed HTML projects, including all JS, CSS images and any other resource files.
+*Compactor* is an efficient alternative to generate fully compressed HTML projects, including all JS, CSS images and any other resource files. You can use it to develop static websites or with your server side rendered website.
 
-It was primary designed to work with static websites where you don't have, don't need or don't want to use NodeJS and their crap system but you can also use it with your server side rendered website.
+It was primarily designed to work with static websites where you don't have, don't need or don't want to use NodeJS ecosystem including NPM or Yarn - freedom is the key here.
 
-The ideia is very simple: you give the root folder of the project, and *compactor* builds the compressed version of the project for you with all possible optimizations. Start with no configuration needed.
+The usage is very simple: you give the root folder of the project, and *compactor* builds the compressed version of the project for you with all possible optimizations. Start with no configuration needed.
 
 ----
 
@@ -12,8 +12,7 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 
 - Written in Go Language in a single binary.
 - Provided as package module for Go.
-- Support files mapping and bundler.
-- Support ignore, include and exclude rules.
+- Supports ignore, include and exclude rules.
 - Optimizes HTML, CSS, SCSS, SASS, JavaScript, TypeScript, JSON and XML, ...
 - Compiles SCSS/SASS to CSS.
 - Compiles TypeScript to Javascript.
@@ -21,8 +20,8 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 - Automatically add hash ID to avoid caching in JS and CSS files: ``file.js`` -> ``file.485.js``
 - Compress images in GIF, JPG, JPEG, PNG and SVG format.
 - Automatically create WEBP copy from JPG, JPEG and PNG as progressive enhancement.
-- Partials for HTML includes.
-- Watch mode for automation and live development.
+- Add support to HTML imports, so you can split the code and the system will automatically merge it on compilation.
+- Develop mode for automation with file watcher and web server for live development.
 - CLI flags to fine tuning control.
 - Just works!
 
@@ -30,7 +29,6 @@ The ideia is very simple: you give the root folder of the project, and *compacto
 
 ## RoadMap (In Development)
 
-- Single output from multiple files for SASS and TypeScript (these languages does not include it out of the box, you have to use a 'index' file).
 - Single output and merge for JSON, XML e SVG.
 - Avif copy format from others images formats.
 - Less, Stylus and CoffeeScript compilers.
@@ -63,7 +61,7 @@ Done! To check command flags use:
 compactor --help
 ```
 
-To compress a project source into a destination, run:
+To compress a project, run:
 
 ```bash
 compactor \
@@ -71,7 +69,7 @@ compactor \
     --destination /path/to/destination/
 ```
 
-To watch live changes while developing a project, add the watch flag:
+To watch changes and live compress the project that is being rendered by other service, run:
 
 ```bash
 compactor \
@@ -80,35 +78,20 @@ compactor \
     --destination /path/to/destination/
 ```
 
+To run a complete dev environment for static projects, use the ``--develop`` option:
+
+```bash
+compactor \
+    --develop true \
+    --source /path/to/source/ \
+    --destination /path/to/destination/
+```
+
+You can also run compactor with other modes and options. Check the available options with the ``--help`` flag.
+
 ----
 
-## File Mappings and Bundles
-
-If you are using custom file mappings or package bundle features, please make sure to require the correct file or path in our HTML files and related code that require such files. You should always use the final file path.
-
-For example, if you have 2 scripts (``lib.js`` and ``events.js``) that are merged and placed in ``scripts.js`` by ``compactor``, set the reference of the file like bellow:
-
-```html
-<script src="scripts.js"></script>
-```
-
-The same applies to CSS, JS files or any other file that use others files as reference:
-
-```css
-/* CSS */
-.bg {
-    background-image: url('final-name.png')
-}
-```
-
-```js
-// JS
-required('bundled.js')
-```
-
-That is it! Enjoy!
-
-## TypeScript - Required Options
+## Usage with TypeScript - Required Options
 
 To use TypeScript compilation, you must provide the ``tsconfig.json`` file with at least the following options. Please make sure that the ``--source`` CLI option are the same as the ``baseUrl`` value inside the config file:
 
@@ -120,3 +103,5 @@ To use TypeScript compilation, you must provide the ``tsconfig.json`` file with 
   }
 }
 ```
+
+That is it! Enjoy!
