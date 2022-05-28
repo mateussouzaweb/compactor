@@ -50,15 +50,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
-		filepath := os.Resolve(path, extensions, os.Dir(file.Path))
+		filePath := os.Resolve(path, extensions, os.Dir(file.Path))
 
-		if compactor.GetFile(filepath).Path != "" {
+		if compactor.GetFile(filePath).Path != "" {
 			related = append(related, compactor.Related{
 				Type:       "import",
 				Dependency: true,
 				Source:     source,
 				Path:       path,
-				File:       compactor.GetFile(filepath),
+				File:       compactor.GetFile(filePath),
 			})
 		}
 	}

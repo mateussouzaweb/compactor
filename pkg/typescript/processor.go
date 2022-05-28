@@ -66,15 +66,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 	}
 
 	// Add possible source map
-	filemap := strings.TrimSuffix(file.Path, file.Extension)
-	filemap = filemap + ".js.map"
+	fileMap := strings.TrimSuffix(file.Path, file.Extension)
+	fileMap = fileMap + ".js.map"
 
 	related = append(related, compactor.Related{
 		Type:       "source-map",
 		Dependency: true,
 		Source:     "",
-		Path:       os.File(filemap),
-		File:       compactor.GetFile(filemap),
+		Path:       os.File(fileMap),
+		File:       compactor.GetFile(fileMap),
 	})
 
 	// Add possible type declaration
@@ -96,15 +96,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 		source := match[0]
 		path := strings.Trim(match[3], `'"`)
 		thePath := FindRealPath(path)
-		filepath := os.Resolve(thePath, extensions, os.Dir(file.Path))
+		filePath := os.Resolve(thePath, extensions, os.Dir(file.Path))
 
-		if compactor.GetFile(filepath).Path != "" {
+		if compactor.GetFile(filePath).Path != "" {
 			related = append(related, compactor.Related{
 				Type:       "import",
 				Dependency: false,
 				Source:     source,
 				Path:       path,
-				File:       compactor.GetFile(filepath),
+				File:       compactor.GetFile(filePath),
 			})
 		}
 	}

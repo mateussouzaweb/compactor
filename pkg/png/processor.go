@@ -25,13 +25,13 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 	var related []compactor.Related
 
 	// Add possible progressive image
-	filepath := file.Path + ".webp"
+	filePath := file.Path + ".webp"
 	related = append(related, compactor.Related{
 		Type:       "alternative",
 		Dependency: true,
 		Source:     "",
-		Path:       os.File(filepath),
-		File:       compactor.GetFile(filepath),
+		Path:       os.File(filePath),
+		File:       compactor.GetFile(filePath),
 	})
 
 	return related, nil

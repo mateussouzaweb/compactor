@@ -40,15 +40,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 	for _, match := range matches {
 		source := match[0]
 		path := strings.Trim(match[1], `'"`)
-		filepath := os.Resolve(path, extensions, os.Dir(file.Path))
+		filePath := os.Resolve(path, extensions, os.Dir(file.Path))
 
-		if compactor.GetFile(filepath).Path != "" {
+		if compactor.GetFile(filePath).Path != "" {
 			related = append(related, compactor.Related{
 				Type:       "partial",
 				Dependency: true,
 				Source:     source,
 				Path:       path,
-				File:       compactor.GetFile(filepath),
+				File:       compactor.GetFile(filePath),
 			})
 		}
 	}
@@ -73,15 +73,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 			continue
 		}
 
-		filepath := os.Resolve(src, extensions, os.Dir(file.Path))
+		filePath := os.Resolve(src, extensions, os.Dir(file.Path))
 
-		if compactor.GetFile(filepath).Path != "" {
+		if compactor.GetFile(filePath).Path != "" {
 			related = append(related, compactor.Related{
 				Type:       "other",
 				Dependency: false,
 				Source:     code,
 				Path:       src,
-				File:       compactor.GetFile(filepath),
+				File:       compactor.GetFile(filePath),
 			})
 		}
 
@@ -105,15 +105,15 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 			continue
 		}
 
-		filepath := os.Resolve(href, []string{}, os.Dir(file.Path))
+		filePath := os.Resolve(href, []string{}, os.Dir(file.Path))
 
-		if compactor.GetFile(filepath).Path != "" {
+		if compactor.GetFile(filePath).Path != "" {
 			related = append(related, compactor.Related{
 				Type:       "other",
 				Dependency: false,
 				Source:     code,
 				Path:       href,
-				File:       compactor.GetFile(filepath),
+				File:       compactor.GetFile(filePath),
 			})
 		}
 
