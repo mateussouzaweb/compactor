@@ -3,7 +3,11 @@
 set -e
 set -u
 
-echo "Installing compactor..."
+VERSION="v0.1.2"
+REPOSITORY="https://github.com/mateussouzaweb/compactor"
+BINARY="${REPOSITORY}/releases/download/${VERSION}/compactor"
+
+echo "[INFO] Installing compactor and dependencies..."
 
 # Install dependencies
 if [[ $(node -v) == "" ]]; then
@@ -21,8 +25,7 @@ for i in "${p[@]}"; do
 done
 
 # Install compactor
-REPOSITORY="https://github.com/mateussouzaweb/compactor/releases/download/latest"
-sudo wget $REPOSITORY/compactor -O /usr/local/bin/compactor
+sudo wget $BINARY -O /usr/local/bin/compactor
 sudo chmod +x /usr/local/bin/compactor
 
-echo "Compactor installed!"
+echo "[INFO] Compactor ${VERSION} installed!"
