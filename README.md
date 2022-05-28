@@ -41,18 +41,10 @@ The usage is very simple: you give the root folder of the project, and *compacto
 
 ## CLI - Installation and Usage
 
-For now, you first need to install dependencies:
+Just run the command below to install compactor and dependencies:
 
 ```bash
-sudo apt install -y nodejs npm libjpeg-progs
-```
-
-Then download the most recent binary file and make it executable:
-
-```bash
-REPOSITORY="https://github.com/mateussouzaweb/compactor/releases/download/latest"
-sudo wget $REPOSITORY/compactor -O /usr/local/bin/compactor
-sudo chmod +x /usr/local/bin/compactor
+curl https://mateussouzaweb.github.io/compactor/install.sh | bash
 ```
 
 Done! To check command flags use:
