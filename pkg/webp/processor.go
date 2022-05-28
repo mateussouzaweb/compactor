@@ -8,11 +8,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("cwebp", "cwebp-bin")
-}
-
 // CreateCopy make a WEBP copy of a image file from almost any format
 func CreateCopy(source string, destination string, quality int) error {
 
@@ -43,7 +38,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "webp",
 		Extensions: []string{".webp"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  Transform,

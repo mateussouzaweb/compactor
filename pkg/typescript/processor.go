@@ -14,19 +14,6 @@ var _tsConfigFile string
 
 // Init processor
 func Init(options *compactor.Options) error {
-
-	err := os.NodeRequire("tsc", "typescript")
-
-	if err != nil {
-		return err
-	}
-
-	err = os.NodeRequire("terser", "terser")
-
-	if err != nil {
-		return err
-	}
-
 	return InitConfig(options.Source.Path)
 }
 

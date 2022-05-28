@@ -9,11 +9,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("sass", "sass")
-}
-
 // Resolve processor
 func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
 
@@ -98,7 +93,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "css",
 		Extensions: []string{".css"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    Resolve,
 		Related:    Related,
 		Transform:  Transform,

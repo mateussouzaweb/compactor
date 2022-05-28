@@ -9,11 +9,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("terser", "terser")
-}
-
 // Resolve processor
 func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
 
@@ -113,7 +108,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "javascript",
 		Extensions: []string{".js", ".mjs"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    Resolve,
 		Related:    Related,
 		Transform:  Transform,

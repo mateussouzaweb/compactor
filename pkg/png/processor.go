@@ -7,18 +7,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/webp"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-
-	err := os.NodeRequire("optipng", "optipng-bin")
-
-	if err != nil {
-		return err
-	}
-
-	return os.NodeRequire("cwebp", "cwebp-bin")
-}
-
 // Related processor
 func Related(options *compactor.Options, file *compactor.File) ([]compactor.Related, error) {
 
@@ -80,7 +68,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "png",
 		Extensions: []string{".png"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    generic.Resolve,
 		Related:    Related,
 		Transform:  Transform,

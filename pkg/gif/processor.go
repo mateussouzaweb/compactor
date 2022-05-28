@@ -6,11 +6,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("gifsicle", "gifsicle")
-}
-
 // Transform processor
 func Transform(options *compactor.Options, file *compactor.File) error {
 
@@ -49,7 +44,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "gif",
 		Extensions: []string{".gif"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  Transform,

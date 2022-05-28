@@ -9,11 +9,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("html-minifier", "html-minifier")
-}
-
 // ExtractAttribute find the value of the attribute
 func ExtractAttribute(html string, attribute string, defaultValue string) string {
 
@@ -247,7 +242,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "html",
 		Extensions: []string{".html", ".htm"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    generic.Resolve,
 		Related:    Related,
 		Transform:  Transform,

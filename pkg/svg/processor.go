@@ -6,11 +6,6 @@ import (
 	"github.com/mateussouzaweb/compactor/pkg/generic"
 )
 
-// Init processor
-func Init(options *compactor.Options) error {
-	return os.NodeRequire("svgo", "svgo")
-}
-
 // Minify SVG content
 func Minify(content string) (string, error) {
 
@@ -79,7 +74,7 @@ func Plugin() *compactor.Plugin {
 	return &compactor.Plugin{
 		Namespace:  "svg",
 		Extensions: []string{".svg"},
-		Init:       Init,
+		Init:       generic.Init,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  generic.Transform,
