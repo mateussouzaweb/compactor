@@ -166,13 +166,15 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 	for _, related := range file.Related {
 		if related.File.Exists && related.Type == "import" {
 
-			fromPath := related.Path
-			toPath := options.CleanPath(related.File.Destination)
+			relativePath := os.Relative(os.Dir(file.Destination), related.File.Destination)
+			if !strings.HasPrefix(relativePath, "../") {
+				relativePath = "./" + relativePath
+			}
 
 			oldSource := related.Source
-			firstIndex := strings.LastIndex(oldSource, fromPath)
-			lastIndex := firstIndex + len(fromPath)
-			newSource := oldSource[:firstIndex] + toPath + oldSource[lastIndex:]
+			firstIndex := strings.LastIndex(oldSource, related.Path)
+			lastIndex := firstIndex + len(related.Path)
+			newSource := oldSource[:firstIndex] + relativePath + oldSource[lastIndex:]
 
 			err = os.Replace(
 				file.Destination,

@@ -2,7 +2,6 @@ package typescript
 
 import (
 	"encoding/json"
-	"path/filepath"
 	"strings"
 
 	"github.com/mateussouzaweb/compactor/os"
@@ -52,7 +51,10 @@ func RunTranspiler(data Transpiler) error {
 
 	const result = ts.transpileModule(source, config)
 	const output = result.outputText
-	const sourceMap = result.sourceMapText
+	const sourceMap = result.sourceMapText.replace(
+		'"sources":["{FILENAME}"]',
+		'"sources":["{RELATIVE}"]'
+	)
 
 	fs.writeFileSync('{DESTINATION}', output)
 
@@ -61,14 +63,12 @@ func RunTranspiler(data Transpiler) error {
 	}
 	`
 
-	relative, err := filepath.Rel(os.Dir(data.Destination), data.File)
-
-	if err != nil {
-		return err
-	}
+	fileName := os.File(data.File)
+	relative := os.Relative(os.Dir(data.Destination), data.File)
 
 	runCode = strings.Replace(runCode, "{CONFIG}", string(config), -1)
 	runCode = strings.Replace(runCode, "{SOURCE}", sourceFile, -1)
+	runCode = strings.Replace(runCode, "{FILENAME}", fileName, -1)
 	runCode = strings.Replace(runCode, "{RELATIVE}", relative, -1)
 	runCode = strings.Replace(runCode, "{DESTINATION}", data.Destination, -1)
 

@@ -83,7 +83,7 @@ func GetFile(path string) *File {
 // AppendFile appends file information to index from its path
 func AppendFile(path string, root string) error {
 
-	location := os.Relative(path, root)
+	location := os.Clean(path, root)
 	content, checksum, perm := os.Info(path)
 
 	file := File{

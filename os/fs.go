@@ -123,9 +123,15 @@ func Chown(file string, user int, group int) error {
 	return os.Chown(file, user, group)
 }
 
-// Relative return the relative path from root
-func Relative(path string, root string) string {
+// Clean return the cleaned relative path from root
+func Clean(path string, root string) string {
 	return strings.Replace(path, root, "", 1)
+}
+
+// Relative return the relative path from root to the target path
+func Relative(base string, target string) string {
+	relative, _ := filepath.Rel(base, target)
+	return relative
 }
 
 // Dir return the clean directory path for file
