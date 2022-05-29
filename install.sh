@@ -27,7 +27,7 @@ INSTALLED=$(npm list -g)
 
 echo "[INFO] Checking NPM packages..."
 for PKG in "${PKGS[@]}"; do
-  echo $INSTALLED | grep "${PKG}" || npm install --silent -g "${PKG}"
+  echo $INSTALLED | grep "${PKG}" || npm install -s -g "${PKG}"
   echo "[INFO] ${PKG} - OK"
 done
 
@@ -36,7 +36,7 @@ export PATH="$PATH:$BINARIES"
 
 # Install compactor
 mkdir -p $BINARIES
-wget $BINARY -O $BINARIES/compactor
+wget -q $BINARY -O $BINARIES/compactor
 chmod +x $BINARIES/compactor
 
 echo "[INFO] Compactor ${VERSION} installed!"
