@@ -36,6 +36,8 @@ export PATH="$PATH:$BINARIES"
 
 # Install compactor
 mkdir -p $BINARIES
+
+echo "[INFO] Downloading compactor..."
 wget -q $BINARY -O $BINARIES/compactor
 chmod +x $BINARIES/compactor
 
