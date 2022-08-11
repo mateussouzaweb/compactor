@@ -119,8 +119,14 @@ func FindRealPath(path string) string {
 // Transform processor
 func Transform(options *compactor.Options, file *compactor.File) error {
 
-	// Copy from user config file and make sure output is present
+	// Copy from user config file
 	config := *_tsConfig
+
+	if config.CompilerOptions == nil {
+		config.CompilerOptions = make(map[string]interface{})
+	}
+
+	// Make sure output is present
 	config.CompilerOptions["emitDeclarationOnly"] = false
 	config.CompilerOptions["noEmit"] = false
 	config.CompilerOptions["noEmitOnError"] = true
