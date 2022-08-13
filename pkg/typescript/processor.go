@@ -30,10 +30,13 @@ func InitConfig(path string) error {
 // Resolve processor
 func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
 
-	hash := file.Checksum[len(file.Checksum)-1]
 	destination := options.ToDestination(file.Path)
-	destination = options.ToHashed(destination, hash)
 	destination = options.ToExtension(destination, ".js")
+
+	if options.Destination.Hashed {
+		hash := file.Checksum[len(file.Checksum)-1]
+		destination = options.ToHashed(destination, hash)
+	}
 
 	return destination, nil
 }
