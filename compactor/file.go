@@ -26,8 +26,7 @@ type File struct {
 	Content     string      // File content
 	Permission  fs.FileMode // File permissions
 	Exists      bool        // File exists flag
-	Checksum    string      // Current Checksum
-	Previous    string      // Previous Checksum
+	Checksum    []string    // Checksum history
 	Related     []Related   // Related items
 }
 

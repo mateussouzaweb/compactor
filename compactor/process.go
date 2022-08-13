@@ -98,8 +98,7 @@ func AppendFile(path string, root string) error {
 		Content:     content,
 		Permission:  perm,
 		Exists:      os.Exist(path),
-		Checksum:    checksum,
-		Previous:    "",
+		Checksum:    []string{checksum},
 	}
 
 	_files = append(_files, &file)
@@ -118,15 +117,21 @@ func UpdateFile(path string) error {
 
 		exists := os.Exist(file.Path)
 		content, checksum, perm := os.Info(file.Path)
-		current := file.Checksum
 
 		file.Content = content
 		file.Permission = perm
 		file.Exists = exists
-		file.Checksum = checksum
 
-		if file.Checksum != current {
-			file.Previous = current
+		checksumExists := false
+		for _, existing := range file.Checksum {
+			if existing == checksum {
+				checksumExists = true
+				break
+			}
+		}
+
+		if !checksumExists {
+			file.Checksum = append(file.Checksum, checksum)
 		}
 
 		break
@@ -304,53 +309,36 @@ func Process(options *Options, file *File) error {
 // Delete removes the destination file(s) for given file
 func Delete(options *Options, file *File) error {
 
-	toDelete := []string{}
-
-	// File name
 	destination := file.Destination
-	checksum := options.ToHashed(destination, file.Checksum)
-	previous := options.ToHashed(destination, file.Previous)
-	clean := options.ToNonHashed(destination, file.Checksum)
-	cleanPrevious := options.ToNonHashed(destination, file.Previous)
+	toDelete := []string{destination}
 
-	toDelete = append(
-		toDelete,
-		destination,
-		checksum,
-		previous,
-		clean,
-		cleanPrevious,
-	)
+	// File checksum history
+	for _, checksum := range file.Checksum {
+		path := options.ToHashed(destination, checksum)
+		clean := options.ToNonHashed(destination, checksum)
+		toDelete = append(toDelete, path, clean)
+	}
 
 	// Related auto generated dependencies
 	for _, related := range file.Related {
 		if related.Dependency && related.Source == "" {
 
-			// Variations from related file and checksum
 			destination := related.File.Destination
-			hashed := options.ToHashed(destination, related.File.Checksum)
-			previous := options.ToHashed(destination, related.File.Previous)
-			clean := options.ToNonHashed(destination, related.File.Checksum)
-			cleanPrevious := options.ToNonHashed(destination, related.File.Previous)
+			toDelete = append(toDelete, destination)
+
+			// Variations from related file checksum
+			for _, checksum := range related.File.Checksum {
+				path := options.ToHashed(destination, checksum)
+				clean := options.ToNonHashed(destination, checksum)
+				toDelete = append(toDelete, path, clean)
+			}
 
 			// Variations from main file checksum
-			hashedFromMain := options.ToHashed(destination, file.Checksum)
-			previousFromMain := options.ToHashed(destination, file.Previous)
-			cleanFromMain := options.ToNonHashed(destination, file.Checksum)
-			cleanPreviousFromMain := options.ToNonHashed(destination, file.Previous)
-
-			toDelete = append(
-				toDelete,
-				destination,
-				hashed,
-				previous,
-				clean,
-				cleanPrevious,
-				hashedFromMain,
-				previousFromMain,
-				cleanFromMain,
-				cleanPreviousFromMain,
-			)
+			for _, checksum := range file.Checksum {
+				path := options.ToHashed(destination, checksum)
+				clean := options.ToNonHashed(destination, checksum)
+				toDelete = append(toDelete, path, clean)
+			}
 
 		}
 	}
