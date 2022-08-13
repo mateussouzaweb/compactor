@@ -385,23 +385,25 @@ func main() {
 	// Debug info
 	if debug {
 
-		os.Printf(os.Purple, "[DEBUG] --- INDEXED FILES ---\n")
+		os.Printf(os.Purple, "[DEBUG] --- RUNTIME SETTINGS ---\n")
+		os.Printf(os.Notice, "[DEBUG] Source ==> %+v\n", options.Source)
+		os.Printf(os.Notice, "[DEBUG] Destination ==> %+v\n", options.Destination)
+		os.Printf(os.Notice, "[DEBUG] Compress ==> %+v\n", options.Compress)
+		os.Printf(os.Notice, "[DEBUG] SourceMap ==> %+v\n", options.SourceMap)
+		os.Printf(os.Notice, "[DEBUG] Progressive ==> %+v\n", options.Progressive)
+		os.Printf(os.Notice, "[DEBUG] Watch ==> %+v\n", watch)
+		os.Printf(os.Notice, "[DEBUG] Server ==> %+v\n", server)
+		os.Printf(os.Notice, "[DEBUG] Server Port ==> %+v\n", serverPort)
 
+		os.Printf(os.Purple, "[DEBUG] --- INDEXED FILES ---\n")
 		for _, file := range compactor.GetFiles() {
-			os.Printf(os.Purple, "[DEBUG] %s", options.CleanPath(file.Path))
-			os.Printf(os.Green, " ==> %s\n", options.CleanPath(file.Destination))
+			os.Printf(os.Notice, "[DEBUG] %s\n", options.CleanPath(file.Path))
 		}
 
-		os.Printf(os.Purple, "[DEBUG] --- DETECTED PACKAGES ---\n")
-
+		os.Printf(os.Purple, "[DEBUG] --- FINAL PACKAGES ---\n")
 		for _, file := range packages {
-			os.Printf(os.Purple, "[DEBUG] %s", options.CleanPath(file.Path))
-			os.Printf(os.Green, " ==> %s\n", options.CleanPath(file.Destination))
-
-			for _, related := range file.FindRelated(false) {
-				os.Printf(os.White, "[DEBUG] %s - %s - %s - %s\n",
-					related.Type, related.Dependency, related.Path, options.CleanPath(related.File.Path))
-			}
+			os.Printf(os.Notice, "[DEBUG] %s", options.CleanPath(file.Path))
+			os.Printf(os.Purple, " ==> %s\n", options.CleanPath(file.Destination))
 		}
 
 	}
