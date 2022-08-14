@@ -61,6 +61,7 @@ func shutdown(options *compactor.Options) error {
 
 	if err != nil {
 		os.Printf(os.Fatal, "[ERROR] %v\n", err)
+		_os.Exit(1)
 		return err
 	}
 
@@ -371,6 +372,7 @@ func main() {
 
 	if !os.Exist(options.Source.Path) {
 		os.Printf(os.Fatal, "[ERROR] Files source folder does not exists\n")
+		_os.Exit(1)
 		return
 	}
 
@@ -390,6 +392,7 @@ func main() {
 
 	if err != nil {
 		os.Printf(os.Fatal, "[ERROR] %v\n", err)
+		_os.Exit(1)
 		return
 	}
 
@@ -452,6 +455,7 @@ func main() {
 
 					if err != nil {
 						os.Printf(os.Fatal, "[ERROR] %v\n", err)
+						_os.Exit(1)
 						return err
 					}
 
@@ -465,7 +469,6 @@ func main() {
 					err := process(options, file)
 
 					if err != nil {
-						os.Printf(os.Fatal, "[ERROR] %v\n", err)
 						return err
 					}
 
@@ -482,7 +485,6 @@ func main() {
 							if !related.Dependency && related.File.Path == file.Path {
 								err := process(options, thePackage)
 								if err != nil {
-									os.Printf(os.Fatal, "[ERROR] %v\n", err)
 									return err
 								}
 							}
