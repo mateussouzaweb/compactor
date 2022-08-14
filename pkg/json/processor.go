@@ -50,6 +50,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "json",
 		Extensions: []string{".json"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  generic.Transform,

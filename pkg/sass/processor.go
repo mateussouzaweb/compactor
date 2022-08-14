@@ -12,6 +12,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "sass",
 		Extensions: []string{".sass", ".scss", ".css"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    css.Resolve,
 		Related:    css.Related,
 		Transform:  css.Transform,

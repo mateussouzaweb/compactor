@@ -75,6 +75,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "svg",
 		Extensions: []string{".svg"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  generic.Transform,

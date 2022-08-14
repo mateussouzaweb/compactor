@@ -4,6 +4,10 @@ package compactor
 // Used to start up the plugin and check for their dependencies
 type InitFunc = func(options *Options) error
 
+// Shutdown function
+// Used to shutdown the plugin and cleanup resources
+type ShutdownFunc = func(options *Options) error
+
 // Resolve function
 // Used to transform the source path to the final destination path
 type ResolveFunc = func(options *Options, file *File) (string, error)
@@ -22,11 +26,13 @@ type OptimizeFunc = func(options *Options, file *File) error
 
 // Plugin struct
 type Plugin struct {
-	Namespace  string
-	Extensions []string
-	Init       InitFunc
-	Resolve    ResolveFunc
-	Related    RelatedFunc
-	Transform  TransformFunc
-	Optimize   OptimizeFunc
+	Namespace   string
+	Extensions  []string
+	Initialized bool
+	Init        InitFunc
+	Shutdown    ShutdownFunc
+	Resolve     ResolveFunc
+	Related     RelatedFunc
+	Transform   TransformFunc
+	Optimize    OptimizeFunc
 }

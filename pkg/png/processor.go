@@ -69,6 +69,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "png",
 		Extensions: []string{".png"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    Related,
 		Transform:  Transform,

@@ -54,6 +54,19 @@ func process(options *compactor.Options, file *compactor.File) error {
 	return nil
 }
 
+// shutdown runs cleanup process before exiting the program
+func shutdown(options *compactor.Options) error {
+
+	err := compactor.Shutdown(options)
+
+	if err != nil {
+		os.Printf(os.Fatal, "[ERROR] %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
 // main runs the program
 func main() {
 
@@ -367,6 +380,7 @@ func main() {
 
 	go func() {
 		<-exit
+		shutdown(options)
 		os.Printf(os.Notice, "[INFO] Goodbye :)")
 		_os.Exit(0)
 	}()
@@ -494,5 +508,8 @@ func main() {
 	if watch || server {
 		<-exit
 	}
+
+	// Shutdown
+	shutdown(options)
 
 }

@@ -277,10 +277,13 @@ func Process(options *Options, file *File) error {
 	plugin := GetPlugin(file.Extension)
 
 	// Init action
-	err = plugin.Init(options)
+	if !plugin.Initialized {
+		err = plugin.Init(options)
+		plugin.Initialized = true
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	// Determine action based on processable file
@@ -355,6 +358,21 @@ func Delete(options *Options, file *File) error {
 			return err
 		}
 
+	}
+
+	return nil
+}
+
+// Shutdown make sure every plugin has properly shutdown
+func Shutdown(options *Options) error {
+
+	for _, plugin := range _plugins {
+		if plugin.Initialized {
+			err := plugin.Shutdown(options)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

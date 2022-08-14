@@ -112,6 +112,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "javascript",
 		Extensions: []string{".js", ".mjs"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    Resolve,
 		Related:    Related,
 		Transform:  Transform,

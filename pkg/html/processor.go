@@ -243,6 +243,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "html",
 		Extensions: []string{".html", ".htm"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    Related,
 		Transform:  Transform,

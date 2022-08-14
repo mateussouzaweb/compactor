@@ -50,6 +50,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "xml",
 		Extensions: []string{".xml"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    generic.Related,
 		Transform:  generic.Transform,

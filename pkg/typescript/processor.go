@@ -27,6 +27,11 @@ func InitConfig(path string) error {
 	return err
 }
 
+// Shutdown processor
+func Shutdown(options *compactor.Options) error {
+	return nil
+}
+
 // Resolve processor
 func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
 
@@ -229,6 +234,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "typescript",
 		Extensions: []string{".js", ".mjs", ".jsx", ".ts", ".mts", ".tsx"},
 		Init:       Init,
+		Shutdown:   Shutdown,
 		Resolve:    Resolve,
 		Related:    Related,
 		Transform:  Transform,

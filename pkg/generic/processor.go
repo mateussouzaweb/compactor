@@ -10,6 +10,11 @@ func Init(options *compactor.Options) error {
 	return nil
 }
 
+// Shutdown processor
+func Shutdown(options *compactor.Options) error {
+	return nil
+}
+
 // Resolve returns the clean file destination path for given source file
 func Resolve(options *compactor.Options, file *compactor.File) (string, error) {
 	destination := options.ToDestination(file.Path)
@@ -48,6 +53,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "generic",
 		Extensions: []string{},
 		Init:       Init,
+		Shutdown:   Shutdown,
 		Resolve:    Resolve,
 		Related:    Related,
 		Transform:  Transform,

@@ -72,6 +72,7 @@ func Plugin() *compactor.Plugin {
 		Namespace:  "jpeg",
 		Extensions: []string{".jpeg", ".jpg"},
 		Init:       generic.Init,
+		Shutdown:   generic.Shutdown,
 		Resolve:    generic.Resolve,
 		Related:    Related,
 		Transform:  Transform,
