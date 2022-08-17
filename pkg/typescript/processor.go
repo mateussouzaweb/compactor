@@ -9,27 +9,22 @@ import (
 	"github.com/mateussouzaweb/compactor/os"
 )
 
-var _tsConfig *TSConfig
-var _tsConfigFile string
+var _service TranspilerService
 
 // Init processor
 func Init(options *compactor.Options) error {
+
+	err := _service.Init()
+	if err != nil {
+		return err
+	}
+
 	return InitConfig(options.Source.Path)
-}
-
-// InitConfig find and read tsconfig file from given path
-func InitConfig(path string) error {
-
-	var err error
-	_tsConfigFile = FindConfig(path)
-	_tsConfig, err = ReadConfig(_tsConfigFile)
-
-	return err
 }
 
 // Shutdown processor
 func Shutdown(options *compactor.Options) error {
-	return nil
+	return _service.Shutdown()
 }
 
 // Resolve processor
@@ -152,12 +147,7 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 	}
 
 	// Run transpilation
-	err := RunTranspiler(Transpiler{
-		Config:      &config,
-		File:        file.Path,
-		Content:     file.Content,
-		Destination: file.Destination,
-	})
+	err := _service.Execute(&config, file)
 
 	if err != nil {
 		return err

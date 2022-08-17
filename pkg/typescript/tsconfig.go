@@ -19,6 +19,9 @@ type TSConfig struct {
 	References      []string               `json:"references,omitempty"`
 }
 
+var _tsConfig *TSConfig
+var _tsConfigFile string
+
 // FindConfig locate the user defined TypeScript config file
 func FindConfig(path string) string {
 
@@ -57,4 +60,14 @@ func ReadConfig(path string) (*TSConfig, error) {
 	}
 
 	return &config, nil
+}
+
+// InitConfig find and read tsconfig file from given path
+func InitConfig(path string) error {
+
+	var err error
+	_tsConfigFile = FindConfig(path)
+	_tsConfig, err = ReadConfig(_tsConfigFile)
+
+	return err
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,6 +57,22 @@ func RandomString(n int) string {
 func TemporaryFile(file string) string {
 	fileName := Name(file) + "-" + RandomString(10) + Extension(file)
 	return filepath.Join(os.TempDir(), fileName)
+}
+
+// TemporaryPort will retry and return a free TCP port on the system
+func TemporaryPort() (string, error) {
+
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return "", err
+	}
+
+	defer listener.Close()
+
+	portNumber := listener.Addr().(*net.TCPAddr).Port
+	port := fmt.Sprintf("%d", portNumber)
+
+	return port, nil
 }
 
 // EnsureDirectory makes sure directory exists from file path
