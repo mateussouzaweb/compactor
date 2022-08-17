@@ -2,7 +2,6 @@ package os
 
 import (
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,7 +35,7 @@ func Permissions(path string) (fs.FileMode, error) {
 // Read retrieve content from file
 func Read(file string) (string, error) {
 
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 
 	if err != nil {
 		return "", err
@@ -48,7 +47,7 @@ func Read(file string) (string, error) {
 // Write content on file
 func Write(file string, content string, perm fs.FileMode) error {
 
-	err := ioutil.WriteFile(file, []byte(content), perm)
+	err := os.WriteFile(file, []byte(content), perm)
 
 	if err != nil {
 		return err
