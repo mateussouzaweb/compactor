@@ -5,9 +5,18 @@ set -u
 
 VERSION="v0.1.2"
 REPOSITORY="https://github.com/mateussouzaweb/compactor"
-BINARY="${REPOSITORY}/releases/download/${VERSION}/compactor"
-BINARIES="${HOME}/.local/bin"
+BINARY="$REPOSITORY/releases/download/$VERSION/compactor"
+BINARIES="/usr/local/bin"
 
+# Switch to user local binaries if available
+if [ -d "$HOME/.local/bin" ]; then
+  BINARIES="$HOME/.local/bin"
+fi
+
+# Make sure binaries path works
+export PATH="$PATH:$BINARIES"
+
+# Start install
 echo "[INFO] Installing compactor and dependencies..."
 
 # Install dependencies
@@ -27,18 +36,13 @@ INSTALLED=$(npm list -g)
 
 echo "[INFO] Checking NPM packages..."
 for PKG in "${PKGS[@]}"; do
-  echo $INSTALLED | grep "${PKG}" || npm install -s -g "${PKG}"
-  echo "[INFO] ${PKG} - OK"
+  echo $INSTALLED | grep "$PKG" || npm install -s -g "$PKG"
+  echo "[INFO] $PKG - OK"
 done
 
-# Make sure binaries path works
-export PATH="$PATH:$BINARIES"
-
 # Install compactor
-mkdir -p $BINARIES
-
 echo "[INFO] Downloading compactor..."
 wget -q $BINARY -O $BINARIES/compactor
 chmod +x $BINARIES/compactor
 
-echo "[INFO] Compactor ${VERSION} installed!"
+echo "[INFO] Compactor ${VERSION} installed at $BINARIES/compactor"

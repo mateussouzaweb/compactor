@@ -44,7 +44,7 @@ The usage is very simple: you give the root folder of the project, and *compacto
 Just run the command below to install compactor and dependencies:
 
 ```bash
-curl https://mateussouzaweb.github.io/compactor/install.sh | bash
+curl https://mateussouzaweb.github.io/compactor/install.sh | bash -
 ```
 
 Done! To check command flags use:
