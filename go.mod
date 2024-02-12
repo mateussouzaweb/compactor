@@ -1,6 +1,6 @@
 module github.com/mateussouzaweb/compactor
 
-go 1.18
+go 1.22.0
 
 require github.com/tdewolff/minify v2.3.6+incompatible
 
