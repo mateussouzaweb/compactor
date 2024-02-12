@@ -4,8 +4,8 @@ import (
 	"github.com/mateussouzaweb/compactor/compactor"
 	"github.com/mateussouzaweb/compactor/os"
 	"github.com/mateussouzaweb/compactor/pkg/generic"
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/json"
 )
 
 // Minify json content
