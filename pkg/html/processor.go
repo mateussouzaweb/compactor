@@ -192,7 +192,7 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 		}
 
 		path := related.Path
-		destination := "/" + options.CleanPath(related.File.Destination)
+		destination := "./" + options.CleanPath(related.File.Destination)
 		content = strings.Replace(content, path, destination, 1)
 
 	}
