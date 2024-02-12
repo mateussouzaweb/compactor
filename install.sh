@@ -3,7 +3,7 @@
 set -e
 set -u
 
-VERSION="v0.1.2"
+VERSION="v0.2.0"
 REPOSITORY="https://github.com/mateussouzaweb/compactor"
 BINARY="$REPOSITORY/releases/download/$VERSION/compactor"
 BINARIES="/usr/local/bin"
