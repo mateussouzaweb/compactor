@@ -192,7 +192,14 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 		}
 
 		path := related.Path
-		destination := "./" + options.CleanPath(related.File.Destination)
+		destination := options.CleanPath(related.File.Destination)
+
+		if strings.HasPrefix(path, "/") {
+			destination = "/" + destination
+		} else if strings.HasPrefix(path, "./") {
+			destination = "./" + destination
+		}
+
 		content = strings.Replace(content, path, destination, 1)
 
 	}
