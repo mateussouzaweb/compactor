@@ -31,7 +31,7 @@ if [[ $(/sbin/ldconfig -p | grep libjpeg) == "" ]]; then
 fi
 
 # Install NPM packages
-PKGS=( gifsicle jpegoptim-bin cwebp-bin optipng-bin sass terser typescript svgo html-minifier )
+PKGS=( gifsicle jpegoptim-bin cwebp-bin optipng-bin sass terser typescript svgo html-minifier rollup )
 INSTALLED=$(npm list -g)
 
 echo "[INFO] Checking NPM packages..."
