@@ -1,32 +1,124 @@
-name: Publish new release
+name: Release
 
 on:
   push:
-    branches-ignore:
-      - "*"
-    tags:
-      - "v*.*.*"
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+env:
+  CI: true
+  SAVE_ARTIFACT: false
 
 jobs:
-  build:
-    name: Build
+  check-commit:
+    if: contains(github.event.head_commit.message, 'Version')
+    name: Check Commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - id: validate-message
+        name: Validate if is version commit
+        run: |
+          REGEX="^Version [0-9]+\.[0-9]+\.[0-9]+$"
+          COMMIT="${{ github.event.head_commit.message }}"
+          [[ $COMMIT =~ $REGEX ]] && exit 0 || exit 1
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+  extract-information:
+    name: Extract Information
+    needs: check-commit
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.extract.outputs.TAG }}
+      version: ${{ steps.extract.outputs.VERSION }}
+    steps:
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v6
+
+      - id: extract
+        name: Extract tag and version
+        run: |
+          # Extract information from commit
+          COMMIT="${{ github.event.head_commit.message }}"
+          VERSION="$(echo $COMMIT | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+          TAG="v$VERSION"
+
+          # Export information
+          echo "TAG=$TAG" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+  create-release:
+    name: Create Release
+    needs: extract-information
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v6
         with:
-          go-version: 1.22
+          fetch-depth: 0
 
-      - name: Build package
-        run: make build
+      - id: create-release
+        name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.extract-information.outputs.version }}"
+          TAG="${{ needs.extract-information.outputs.tag }}"
+          PREVIOUS=$(git describe --tags --abbrev=0 HEAD^)
+          REPOSITORY="$(gh repo view --json url -q .url)"
 
-      - name: Create tag release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          files: |
+          git log "$PREVIOUS..HEAD" \
+            --no-merges \
+            --pretty=format:"- %s ([%h]($REPOSITORY/commit/%H))" \
+            > NOTES.md
+
+          gh release create "$TAG" \
+            --title "Version $VERSION" \
+            --notes-file NOTES.md \
+            --draft \
             LICENSE.md
-            bin/*
+
+  build-binaries:
+    name: Build Binaries
+    needs: [extract-information, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v6
+
+      - id: setup-go
+        name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - id: build-binaries
+        name: Build binaries
+        run: go run build.go
+
+      - id: list-generated-binaries
+        name: List generated binaries
+        run: ls -1 bin/
+
+      - id: upload-binaries
+        name: Upload binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.extract-information.outputs.tag }}"
+          FILES=$(ls -1 bin/compactor-* | xargs)
+          echo "Uploading files: $FILES"
+          set -- $FILES
+          gh release upload "$TAG" "$@" --clobber
+
+      - id: publish-release
+        name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.extract-information.outputs.tag }}"
+          gh release edit "$TAG" --draft=false --latest

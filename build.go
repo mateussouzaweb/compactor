@@ -1,0 +1,38 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+func main() {
+
+	// Exit with proper code
+	exitCode := 0
+	defer os.Exit(exitCode)
+
+	// Create the build script
+	// Will build binaries for both architectures
+	script := `mkdir -p bin/; \
+	export GOOS=linux; export GOARCH=amd64; \
+	go build -o bin/compactor-amd64 cmd/compactor/main.go; \
+	export GOOS=linux; export GOARCH=arm64; \
+	go build -o bin/compactor-arm64 cmd/compactor/main.go`
+
+	cmd := exec.Command("bash", "-c", script)
+	cmd.Env = os.Environ()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the command and check for errors
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("Build error: %s\n", err.Error())
+		exitCode = 1
+	} else {
+		fmt.Printf("Build completed successfully!\n")
+	}
+
+}
