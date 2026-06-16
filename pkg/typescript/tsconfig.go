@@ -9,14 +9,14 @@ import (
 
 // TSConfig struct
 type TSConfig struct {
-	CompilerOptions map[string]interface{} `json:"compilerOptions,omitempty"`
-	WatchOptions    map[string]interface{} `json:"watchOptions,omitempty"`
-	TypeAcquisition map[string]interface{} `json:"typeAcquisition,omitempty"`
-	Exclude         []string               `json:"exclude,omitempty"`
-	Extends         string                 `json:"extends,omitempty"`
-	Files           []string               `json:"files,omitempty"`
-	Include         []string               `json:"include,omitempty"`
-	References      []string               `json:"references,omitempty"`
+	CompilerOptions map[string]any `json:"compilerOptions,omitempty"`
+	WatchOptions    map[string]any `json:"watchOptions,omitempty"`
+	TypeAcquisition map[string]any `json:"typeAcquisition,omitempty"`
+	Exclude         []string       `json:"exclude,omitempty"`
+	Extends         string         `json:"extends,omitempty"`
+	Files           []string       `json:"files,omitempty"`
+	Include         []string       `json:"include,omitempty"`
+	References      []string       `json:"references,omitempty"`
 }
 
 var _tsConfig *TSConfig

@@ -28,7 +28,7 @@ func NoColor() bool {
 }
 
 // Printf displays a info to standard output
-func Printf(color string, format string, args ...interface{}) {
+func Printf(color string, format string, args ...any) {
 	if NoColor() {
 		fmt.Printf(format, args...)
 	} else {

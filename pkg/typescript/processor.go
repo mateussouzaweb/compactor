@@ -105,12 +105,12 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 // FindRealPath transform TSConfig paths into real path values
 func FindRealPath(path string) string {
 
-	paths, ok := _tsConfig.CompilerOptions["paths"].(map[string]interface{})
+	paths, ok := _tsConfig.CompilerOptions["paths"].(map[string]any)
 
 	if ok {
 		for key, values := range paths {
 			find := strings.Trim(key, "*")
-			value := fmt.Sprintf("%v", values.([]interface{})[0])
+			value := fmt.Sprintf("%v", values.([]any)[0])
 			replace := strings.Trim(value, "*")
 			path = strings.Replace(path, find, replace, 1)
 		}
@@ -126,7 +126,7 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 	config := *_tsConfig
 
 	if config.CompilerOptions == nil {
-		config.CompilerOptions = make(map[string]interface{})
+		config.CompilerOptions = make(map[string]any)
 	}
 
 	// Make sure output is present
