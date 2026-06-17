@@ -25,7 +25,6 @@ func CreateCopy(source string, destination string, quality int) error {
 func Transform(options *compactor.Options, file *compactor.File) error {
 
 	err := os.Copy(file.Path, file.Destination)
-
 	if err != nil {
 		return err
 	}

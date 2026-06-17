@@ -1,6 +1,8 @@
 package compactor
 
 import (
+	"slices"
+
 	"github.com/mateussouzaweb/compactor/os"
 )
 
@@ -44,10 +46,8 @@ func GetPlugin(extension string) *Plugin {
 	for _, plugin := range _plugins {
 
 		// Extension plugin
-		for _, _extension := range plugin.Extensions {
-			if _extension == extension {
-				return plugin
-			}
+		if slices.Contains(plugin.Extensions, extension) {
+			return plugin
 		}
 
 		// Generic plugin
@@ -122,13 +122,7 @@ func UpdateFile(path string) error {
 		file.Permission = perm
 		file.Exists = exists
 
-		checksumExists := false
-		for _, existing := range file.Checksum {
-			if existing == checksum {
-				checksumExists = true
-				break
-			}
-		}
+		checksumExists := slices.Contains(file.Checksum, checksum)
 
 		if !checksumExists {
 			file.Checksum = append(file.Checksum, checksum)
@@ -162,7 +156,6 @@ func IndexFiles(options *Options, root string) error {
 
 	// First walks on path and add files to the index
 	paths, err := os.List(root)
-
 	if err != nil {
 		return err
 	}
@@ -181,13 +174,11 @@ func IndexFiles(options *Options, root string) error {
 
 		plugin := GetPlugin(file.Extension)
 		destination, err := plugin.Resolve(options, file)
-
 		if err != nil {
 			return err
 		}
 
 		related, err := plugin.Related(options, file)
-
 		if err != nil {
 			return err
 		}
@@ -268,7 +259,6 @@ func Process(options *Options, file *File) error {
 
 	// Make sure folder exists to avoid issues
 	err := os.EnsureDirectory(file.Destination)
-
 	if err != nil {
 		return err
 	}
@@ -300,7 +290,6 @@ func Process(options *Options, file *File) error {
 
 	// Transform action
 	err = plugin.Transform(options, file)
-
 	if err != nil {
 		return err
 	}
@@ -353,7 +342,6 @@ func Delete(options *Options, file *File) error {
 		}
 
 		err := os.Delete(file)
-
 		if err != nil {
 			return err
 		}

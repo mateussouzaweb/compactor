@@ -29,7 +29,6 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 func Transform(options *compactor.Options, file *compactor.File) error {
 
 	err := os.Copy(file.Path, file.Destination)
-
 	if err != nil {
 		return err
 	}
@@ -57,7 +56,6 @@ func Optimize(options *compactor.Options, file *compactor.File) error {
 
 	if options.ShouldGenerateProgressive(file.Path) {
 		err := webp.CreateCopy(file.Path, file.Destination, 75)
-
 		if err != nil {
 			return err
 		}

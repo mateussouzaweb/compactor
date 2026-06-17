@@ -14,7 +14,6 @@ func Server(root string, port string, onRequest RequestCallback) error {
 
 	// Make sure root folder exists
 	err := EnsureDirectory(root)
-
 	if err != nil {
 		return err
 	}
@@ -32,9 +31,8 @@ func Server(root string, port string, onRequest RequestCallback) error {
 		}
 
 		// Run callback on uri
-		err := onRequest(uri)
-
 		// In case of error, return error 500
+		err := onRequest(uri)
 		if err != nil {
 			http.Error(response, http.StatusText(500), 500)
 			return

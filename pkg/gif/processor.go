@@ -10,7 +10,6 @@ import (
 func Transform(options *compactor.Options, file *compactor.File) error {
 
 	err := os.Copy(file.Path, file.Destination)
-
 	if err != nil {
 		return err
 	}

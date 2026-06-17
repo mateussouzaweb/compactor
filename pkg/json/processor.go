@@ -28,7 +28,6 @@ func Optimize(options *compactor.Options, file *compactor.File) error {
 
 	content := file.Content
 	content, err := Minify(content)
-
 	if err != nil {
 		return err
 	}
@@ -36,7 +35,6 @@ func Optimize(options *compactor.Options, file *compactor.File) error {
 	destination := file.Destination
 	perm := file.Permission
 	err = os.Write(destination, content, perm)
-
 	if err != nil {
 		return err
 	}

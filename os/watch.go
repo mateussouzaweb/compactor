@@ -36,7 +36,6 @@ func Watch(root string, onChange WatchCallback) error {
 
 	// Fill initial checksums
 	files, err := List(root)
-
 	if err != nil {
 		return err
 	}
@@ -57,7 +56,6 @@ func Watch(root string, onChange WatchCallback) error {
 				return nil
 			case <-ticker.C:
 				files, err := List(root)
-
 				if err != nil {
 					return err
 				}

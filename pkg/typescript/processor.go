@@ -49,7 +49,6 @@ func Related(options *compactor.Options, file *compactor.File) ([]compactor.Rela
 	// Read config if not loaded yet
 	if _tsConfigFile == "" {
 		err := InitConfig(file.Root)
-
 		if err != nil {
 			return related, err
 		}
@@ -148,7 +147,6 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 
 	// Run transpilation
 	err := _service.Execute(&config, file)
-
 	if err != nil {
 		return err
 	}

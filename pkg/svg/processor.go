@@ -16,13 +16,11 @@ func Minify(content string) (string, error) {
 
 	settings := "module.exports = {plugins: [{ name: 'removeViewBox', active: false }]}"
 	err := os.Write(config, settings, 0775)
-
 	if err != nil {
 		return content, err
 	}
 
 	err = os.Write(file, content, 0775)
-
 	if err != nil {
 		return content, err
 	}
@@ -53,7 +51,6 @@ func Optimize(options *compactor.Options, file *compactor.File) error {
 
 	content := file.Content
 	content, err := Minify(content)
-
 	if err != nil {
 		return err
 	}
@@ -61,7 +58,6 @@ func Optimize(options *compactor.Options, file *compactor.File) error {
 	destination := file.Destination
 	perm := file.Permission
 	err = os.Write(destination, content, perm)
-
 	if err != nil {
 		return err
 	}

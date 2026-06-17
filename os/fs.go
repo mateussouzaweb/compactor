@@ -21,14 +21,13 @@ func Exist(path string) bool {
 func Permissions(path string) (fs.FileMode, error) {
 
 	var perm fs.FileMode
-	info, err := os.Stat(path)
 
+	info, err := os.Stat(path)
 	if err != nil {
 		return perm, err
 	}
 
 	perm = info.Mode().Perm()
-
 	return perm, nil
 }
 
@@ -36,7 +35,6 @@ func Permissions(path string) (fs.FileMode, error) {
 func Read(file string) (string, error) {
 
 	content, err := os.ReadFile(file)
-
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +46,6 @@ func Read(file string) (string, error) {
 func Write(file string, content string, perm fs.FileMode) error {
 
 	err := os.WriteFile(file, []byte(content), perm)
-
 	if err != nil {
 		return err
 	}
@@ -60,13 +57,11 @@ func Write(file string, content string, perm fs.FileMode) error {
 func Copy(origin string, destination string) error {
 
 	content, err := Read(origin)
-
 	if err != nil {
 		return err
 	}
 
 	perm, err := Permissions(origin)
-
 	if err != nil {
 		return err
 	}
@@ -80,13 +75,11 @@ func Copy(origin string, destination string) error {
 func Replace(file string, search string, replace string) error {
 
 	content, err := Read(file)
-
 	if err != nil {
 		return err
 	}
 
 	permissions, err := Permissions(file)
-
 	if err != nil {
 		return err
 	}
@@ -159,19 +152,16 @@ func Extension(file string) string {
 func Info(file string) (string, string, fs.FileMode) {
 
 	content, err := Read(file)
-
 	if err != nil {
 		content = ""
 	}
 
 	perm, err := Permissions(file)
-
 	if err != nil {
 		perm = fs.FileMode(0644)
 	}
 
 	checksum, err := Checksum(content)
-
 	if err != nil {
 		checksum = ""
 	}

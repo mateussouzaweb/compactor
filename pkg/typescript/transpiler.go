@@ -24,7 +24,6 @@ type TranspilerService struct {
 func (service *TranspilerService) Init() error {
 
 	port, err := os.TemporaryPort()
-
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,6 @@ func (service *TranspilerService) Init() error {
 	// Run server
 	cmd := exec.Command("node", file)
 	err = cmd.Start()
-
 	if err != nil {
 		return err
 	}
@@ -161,7 +159,6 @@ func (service *TranspilerService) Execute(config *TSConfig, file *compactor.File
 	}
 
 	body, err := json.Marshal(data)
-
 	if err != nil {
 		return err
 	}
@@ -179,7 +176,6 @@ func (service *TranspilerService) Execute(config *TSConfig, file *compactor.File
 	defer response.Body.Close()
 
 	responseBody, err := io.ReadAll(response.Body)
-
 	if err != nil {
 		return err
 	}
@@ -190,20 +186,17 @@ func (service *TranspilerService) Execute(config *TSConfig, file *compactor.File
 	}{}
 
 	err = json.Unmarshal(responseBody, &result)
-
 	if err != nil {
 		return err
 	}
 
 	err = os.Write(file.Destination, result.Output, file.Permission)
-
 	if err != nil {
 		return err
 	}
 
 	if result.SourceMap != "" {
 		err := os.Write(file.Destination+".map", result.SourceMap, file.Permission)
-
 		if err != nil {
 			return err
 		}

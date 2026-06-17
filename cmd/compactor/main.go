@@ -58,7 +58,6 @@ func process(options *compactor.Options, file *compactor.File) error {
 func shutdown(options *compactor.Options) error {
 
 	err := compactor.Shutdown(options)
-
 	if err != nil {
 		os.Printf(os.Fatal, "[ERROR] %v\n", err)
 		_os.Exit(1)
@@ -348,9 +347,8 @@ func main() {
 		"Format: [PLUGIN,...]\nDescription: Defines which plugin should be disabled. When a plugin is disabled, the next available plugin that matches the file extension will be used. Otherwise, it forces the use of the generic plugin (simple copy to destination)",
 		func(value string) error {
 
-			list := strings.Split(value, ",")
-
-			for _, namespace := range list {
+			list := strings.SplitSeq(value, ",")
+			for namespace := range list {
 				compactor.RemovePlugin(namespace)
 			}
 
@@ -389,7 +387,6 @@ func main() {
 
 	// Index source files
 	err := compactor.IndexFiles(options, options.Source.Path)
-
 	if err != nil {
 		os.Printf(os.Fatal, "[ERROR] %v\n", err)
 		_os.Exit(1)
@@ -452,7 +449,6 @@ func main() {
 				func(path string, action string) error {
 
 					err = compactor.IndexFiles(options, os.Dir(path))
-
 					if err != nil {
 						os.Printf(os.Fatal, "[ERROR] %v\n", err)
 						_os.Exit(1)
@@ -467,7 +463,6 @@ func main() {
 					}
 
 					err := process(options, file)
-
 					if err != nil {
 						return err
 					}

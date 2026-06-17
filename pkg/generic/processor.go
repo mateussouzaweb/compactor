@@ -33,8 +33,8 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 	content := file.Content
 	perm := file.Permission
 	destination := file.Destination
-	err := os.Write(destination, content, perm)
 
+	err := os.Write(destination, content, perm)
 	if err != nil {
 		return err
 	}

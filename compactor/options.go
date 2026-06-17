@@ -69,7 +69,6 @@ func (o *Options) MatchPatterns(file string, patterns []string) bool {
 	for _, pattern := range patterns {
 
 		result, err := path.Match(pattern, file)
-
 		if err != nil {
 			continue
 		}

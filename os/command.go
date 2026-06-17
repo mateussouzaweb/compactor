@@ -17,7 +17,6 @@ func Exec(cmd string, args ...string) (string, error) {
 
 	result := exec.Command(cmd, args...)
 	output, err := result.CombinedOutput()
-
 	if err != nil {
 		return "", fmt.Errorf("command error: %s ...\n%v\n%s", result.Args, err, string(output))
 	}
@@ -30,7 +29,6 @@ func Checksum(content string) (string, error) {
 
 	sum := md5.New()
 	_, err := io.WriteString(sum, content)
-
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +81,6 @@ func EnsureDirectory(file string) error {
 	if !Exist(path) {
 
 		err := os.MkdirAll(path, 0775)
-
 		if err != nil {
 			return err
 		}

@@ -48,13 +48,11 @@ func ReadConfig(path string) (*TSConfig, error) {
 	}
 
 	content, err := os.Read(path)
-
 	if err != nil {
 		return &config, err
 	}
 
 	err = json.Unmarshal([]byte(content), &config)
-
 	if err != nil {
 		return &config, err
 	}

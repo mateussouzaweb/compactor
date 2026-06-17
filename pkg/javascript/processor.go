@@ -94,11 +94,7 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 		}, ","))
 	}
 
-	_, err := os.Exec(
-		"terser",
-		args...,
-	)
-
+	_, err := os.Exec("terser", args...)
 	if err != nil {
 		return err
 	}

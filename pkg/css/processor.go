@@ -79,11 +79,7 @@ func Transform(options *compactor.Options, file *compactor.File) error {
 		args = append(args, "--source-map", "--embed-sources")
 	}
 
-	_, err := os.Exec(
-		"sass",
-		args...,
-	)
-
+	_, err := os.Exec("sass", args...)
 	if err != nil {
 		return err
 	}
