@@ -2,28 +2,30 @@ package main
 
 import (
 	"flag"
-	_os "os"
+	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/mateussouzaweb/compactor/compactor"
-	"github.com/mateussouzaweb/compactor/os"
-	"github.com/mateussouzaweb/compactor/pkg/css"
-	"github.com/mateussouzaweb/compactor/pkg/generic"
-	"github.com/mateussouzaweb/compactor/pkg/gif"
-	"github.com/mateussouzaweb/compactor/pkg/html"
-	"github.com/mateussouzaweb/compactor/pkg/javascript"
-	"github.com/mateussouzaweb/compactor/pkg/jpeg"
-	"github.com/mateussouzaweb/compactor/pkg/json"
-	"github.com/mateussouzaweb/compactor/pkg/png"
-	"github.com/mateussouzaweb/compactor/pkg/sass"
-	"github.com/mateussouzaweb/compactor/pkg/svg"
-	"github.com/mateussouzaweb/compactor/pkg/typescript"
-	"github.com/mateussouzaweb/compactor/pkg/webp"
-	"github.com/mateussouzaweb/compactor/pkg/xml"
+	"github.com/mateussouzaweb/compactor/src/cli"
+	"github.com/mateussouzaweb/compactor/src/plugins/css"
+	"github.com/mateussouzaweb/compactor/src/plugins/generic"
+	"github.com/mateussouzaweb/compactor/src/plugins/gif"
+	"github.com/mateussouzaweb/compactor/src/plugins/html"
+	"github.com/mateussouzaweb/compactor/src/plugins/javascript"
+	"github.com/mateussouzaweb/compactor/src/plugins/jpeg"
+	"github.com/mateussouzaweb/compactor/src/plugins/json"
+	"github.com/mateussouzaweb/compactor/src/plugins/png"
+	"github.com/mateussouzaweb/compactor/src/plugins/sass"
+	"github.com/mateussouzaweb/compactor/src/plugins/svg"
+	"github.com/mateussouzaweb/compactor/src/plugins/typescript"
+	"github.com/mateussouzaweb/compactor/src/plugins/webp"
+	"github.com/mateussouzaweb/compactor/src/plugins/xml"
+	"github.com/mateussouzaweb/compactor/src/processor"
+	"github.com/mateussouzaweb/compactor/src/server"
+	"github.com/mateussouzaweb/compactor/src/system"
 )
 
 // trueOrFalse returns if given value is likely to be a true or false flag
@@ -36,31 +38,31 @@ func trueOrFalse(value string) bool {
 }
 
 // process runs the package processing on the destination plugin
-func process(options *compactor.Options, file *compactor.File) error {
+func process(options *processor.Options, file *processor.File) error {
 
 	start := time.Now().UnixNano() / int64(time.Millisecond)
-	err := compactor.Process(options, file)
+	err := processor.Process(options, file)
 
 	end := time.Now().UnixNano() / int64(time.Millisecond)
 	processTime := end - start
 
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %s - %dms\n%v\n", file.Location, processTime, err)
+		cli.Printf(cli.Fatal, "[ERROR] %s - %dms\n%v\n", file.Location, processTime, err)
 		return err
 	}
 
-	os.Printf(os.Success, "[PROCESSED] %s - %dms\n", file.Location, processTime)
+	cli.Printf(cli.Success, "[PROCESSED] %s - %dms\n", file.Location, processTime)
 
 	return nil
 }
 
 // shutdown runs cleanup process before exiting the program
-func shutdown(options *compactor.Options) error {
+func shutdown(options *processor.Options) error {
 
-	err := compactor.Shutdown(options)
+	err := processor.Shutdown(options)
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %v\n", err)
-		_os.Exit(1)
+		cli.Printf(cli.Fatal, "[ERROR] %v\n", err)
+		os.Exit(1)
 		return err
 	}
 
@@ -71,67 +73,67 @@ func shutdown(options *compactor.Options) error {
 func main() {
 
 	// Plugins
-	// compactor.AddPlugin("less", less.Plugin())
-	// compactor.AddPlugin("styl", stylus.Plugin())
-	// compactor.AddPlugin("apng", apng.Plugin())
-	// compactor.AddPlugin("avif", avif.Plugin())
-	// compactor.AddPlugin("ico", ico.Plugin())
-	// compactor.AddPlugin("js", babel.Plugin())
-	// compactor.AddPlugin("js", react.Plugin())
-	// compactor.AddPlugin("jsx", react.Plugin())
-	// compactor.AddPlugin("js", vue.Plugin())
-	// compactor.AddPlugin("vue", vue.Plugin())
-	// compactor.AddPlugin("js", svelte.Plugin())
-	// compactor.AddPlugin("svelte", svelte.Plugin())
-	// compactor.AddPlugin("coffee", coffee.Plugin())
-	// compactor.AddPlugin("elm", elm.Plugin())
-	// compactor.AddPlugin("eot", eot.Plugin())
-	// compactor.AddPlugin("ttf", ttf.Plugin())
-	// compactor.AddPlugin("woff", woff.Plugin())
-	// compactor.AddPlugin("gql", graphql.Plugin())
-	// compactor.AddPlugin("graphql", graphql.Plugin())
-	// compactor.AddPlugin("yaml", yaml.Plugin())
-	// compactor.AddPlugin("toml", toml.Plugin())
+	// processor.AddPlugin("less", less.Plugin())
+	// processor.AddPlugin("styl", stylus.Plugin())
+	// processor.AddPlugin("apng", apng.Plugin())
+	// processor.AddPlugin("avif", avif.Plugin())
+	// processor.AddPlugin("ico", ico.Plugin())
+	// processor.AddPlugin("js", babel.Plugin())
+	// processor.AddPlugin("js", react.Plugin())
+	// processor.AddPlugin("jsx", react.Plugin())
+	// processor.AddPlugin("js", vue.Plugin())
+	// processor.AddPlugin("vue", vue.Plugin())
+	// processor.AddPlugin("js", svelte.Plugin())
+	// processor.AddPlugin("svelte", svelte.Plugin())
+	// processor.AddPlugin("coffee", coffee.Plugin())
+	// processor.AddPlugin("elm", elm.Plugin())
+	// processor.AddPlugin("eot", eot.Plugin())
+	// processor.AddPlugin("ttf", ttf.Plugin())
+	// processor.AddPlugin("woff", woff.Plugin())
+	// processor.AddPlugin("gql", graphql.Plugin())
+	// processor.AddPlugin("graphql", graphql.Plugin())
+	// processor.AddPlugin("yaml", yaml.Plugin())
+	// processor.AddPlugin("toml", toml.Plugin())
 
-	compactor.AddPlugin(sass.Plugin())
-	compactor.AddPlugin(css.Plugin())
-	compactor.AddPlugin(javascript.Plugin())
-	compactor.AddPlugin(typescript.Plugin())
-	compactor.AddPlugin(json.Plugin())
-	compactor.AddPlugin(xml.Plugin())
-	compactor.AddPlugin(html.Plugin())
-	compactor.AddPlugin(svg.Plugin())
-	compactor.AddPlugin(gif.Plugin())
-	compactor.AddPlugin(jpeg.Plugin())
-	compactor.AddPlugin(png.Plugin())
-	compactor.AddPlugin(webp.Plugin())
-	compactor.AddPlugin(generic.Plugin())
+	processor.AddPlugin(sass.Plugin())
+	processor.AddPlugin(css.Plugin())
+	processor.AddPlugin(javascript.Plugin())
+	processor.AddPlugin(typescript.Plugin())
+	processor.AddPlugin(json.Plugin())
+	processor.AddPlugin(xml.Plugin())
+	processor.AddPlugin(html.Plugin())
+	processor.AddPlugin(svg.Plugin())
+	processor.AddPlugin(gif.Plugin())
+	processor.AddPlugin(jpeg.Plugin())
+	processor.AddPlugin(png.Plugin())
+	processor.AddPlugin(webp.Plugin())
+	processor.AddPlugin(generic.Plugin())
 
 	// Options
 	version := false
 	debug := false
 	watch := false
-	server := false
+	serverMode := false
 	serverPort := "5000"
 
 	source, _ := filepath.Abs("src/")
 	destination, _ := filepath.Abs("dist/")
 
-	options := &compactor.Options{
-		Source: compactor.Source{
+	options := &processor.Options{
+		Source: processor.Source{
 			Path: source,
 		},
-		Destination: compactor.Destination{
+		Destination: processor.Destination{
 			Path:   destination,
 			Hashed: true,
 		},
-		Compress: compactor.Compress{
+		Compress: processor.Compress{
 			Enabled: true,
 		},
-		SourceMap: compactor.SourceMap{
+		SourceMap: processor.SourceMap{
 			Enabled: true,
 		},
-		Progressive: compactor.Progressive{
+		Progressive: processor.Progressive{
 			Enabled: true,
 		},
 	}
@@ -158,7 +160,7 @@ func main() {
 
 			if trueOrFalse(value) {
 				watch = true
-				server = true
+				serverMode = true
 				options.Destination.Hashed = false
 				options.Compress.Enabled = false
 				options.Progressive.Enabled = false
@@ -182,10 +184,10 @@ func main() {
 		func(value string) error {
 
 			if strings.Contains(value, ":") {
-				server = true
+				serverMode = true
 				serverPort = strings.Replace(value, ":", "", 1)
 			} else {
-				server = trueOrFalse(value)
+				serverMode = trueOrFalse(value)
 			}
 
 			return nil
@@ -349,7 +351,7 @@ func main() {
 
 			list := strings.SplitSeq(value, ",")
 			for namespace := range list {
-				compactor.RemovePlugin(namespace)
+				processor.RemovePlugin(namespace)
 			}
 
 			return nil
@@ -360,78 +362,78 @@ func main() {
 
 	// Print information
 	if version {
-		os.Printf("", "Compactor version 0.2.2\n")
+		cli.Printf("", "Compactor version 0.2.2\n")
 		return
 	}
 
-	os.Printf(os.Purple, ":::| COMPACTOR - 0.2.2 |:::\n")
-	os.Printf(os.Notice, "[INFO] Files source folder is %s\n", options.Source.Path)
-	os.Printf(os.Notice, "[INFO] Files destination folder is %s\n", options.Destination.Path)
+	cli.Printf(cli.Purple, ":::| COMPACTOR - 0.2.2 |:::\n")
+	cli.Printf(cli.Notice, "[INFO] Files source folder is %s\n", options.Source.Path)
+	cli.Printf(cli.Notice, "[INFO] Files destination folder is %s\n", options.Destination.Path)
 
-	if !os.Exist(options.Source.Path) {
-		os.Printf(os.Fatal, "[ERROR] Files source folder does not exists\n")
-		_os.Exit(1)
+	if !system.Exist(options.Source.Path) {
+		cli.Printf(cli.Fatal, "[ERROR] Files source folder does not exists\n")
+		os.Exit(1)
 		return
 	}
 
 	// Start a signal watcher to capture program interrupt
-	exit := make(chan _os.Signal, 1)
-	signal.Notify(exit, _os.Interrupt, syscall.SIGTERM)
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-exit
 		shutdown(options)
-		os.Printf(os.Notice, "[INFO] Goodbye :)")
-		_os.Exit(0)
+		cli.Printf(cli.Notice, "[INFO] Goodbye :)")
+		os.Exit(0)
 	}()
 
 	// Index source files
-	err := compactor.IndexFiles(options, options.Source.Path)
+	err := processor.IndexFiles(options, options.Source.Path)
 	if err != nil {
-		os.Printf(os.Fatal, "[ERROR] %v\n", err)
-		_os.Exit(1)
+		cli.Printf(cli.Fatal, "[ERROR] %v\n", err)
+		os.Exit(1)
 		return
 	}
 
 	// Detect packages
-	packages := compactor.FindPackages(options)
+	packages := processor.FindPackages(options)
 
 	// Debug info
 	if debug {
 
-		os.Printf(os.Purple, "[DEBUG] --- RUNTIME SETTINGS ---\n")
-		os.Printf(os.Notice, "[DEBUG] Source ==> %+v\n", options.Source)
-		os.Printf(os.Notice, "[DEBUG] Destination ==> %+v\n", options.Destination)
-		os.Printf(os.Notice, "[DEBUG] Compress ==> %+v\n", options.Compress)
-		os.Printf(os.Notice, "[DEBUG] SourceMap ==> %+v\n", options.SourceMap)
-		os.Printf(os.Notice, "[DEBUG] Progressive ==> %+v\n", options.Progressive)
-		os.Printf(os.Notice, "[DEBUG] Watch ==> %+v\n", watch)
-		os.Printf(os.Notice, "[DEBUG] Server ==> %+v\n", server)
-		os.Printf(os.Notice, "[DEBUG] Server Port ==> %+v\n", serverPort)
+		cli.Printf(cli.Purple, "[DEBUG] --- RUNTIME SETTINGS ---\n")
+		cli.Printf(cli.Notice, "[DEBUG] Source ==> %+v\n", options.Source)
+		cli.Printf(cli.Notice, "[DEBUG] Destination ==> %+v\n", options.Destination)
+		cli.Printf(cli.Notice, "[DEBUG] Compress ==> %+v\n", options.Compress)
+		cli.Printf(cli.Notice, "[DEBUG] SourceMap ==> %+v\n", options.SourceMap)
+		cli.Printf(cli.Notice, "[DEBUG] Progressive ==> %+v\n", options.Progressive)
+		cli.Printf(cli.Notice, "[DEBUG] Watch ==> %+v\n", watch)
+		cli.Printf(cli.Notice, "[DEBUG] Server ==> %+v\n", serverMode)
+		cli.Printf(cli.Notice, "[DEBUG] Server Port ==> %+v\n", serverPort)
 
-		os.Printf(os.Purple, "[DEBUG] --- INDEXED FILES ---\n")
-		for _, file := range compactor.GetFiles() {
-			os.Printf(os.Notice, "[DEBUG] %s\n", options.CleanPath(file.Path))
+		cli.Printf(cli.Purple, "[DEBUG] --- INDEXED FILES ---\n")
+		for _, file := range processor.GetFiles() {
+			cli.Printf(cli.Notice, "[DEBUG] %s\n", options.CleanPath(file.Path))
 		}
 
-		os.Printf(os.Purple, "[DEBUG] --- FINAL PACKAGES ---\n")
+		cli.Printf(cli.Purple, "[DEBUG] --- FINAL PACKAGES ---\n")
 		for _, file := range packages {
-			os.Printf(os.Notice, "[DEBUG] %s", options.CleanPath(file.Path))
-			os.Printf(os.Purple, " ==> %s\n", options.CleanPath(file.Destination))
+			cli.Printf(cli.Notice, "[DEBUG] %s", options.CleanPath(file.Path))
+			cli.Printf(cli.Purple, " ==> %s\n", options.CleanPath(file.Destination))
 		}
 
 	}
 
 	// Server process
-	if server {
+	if serverMode {
 
 		go func() {
-			os.Printf(os.Notice, "[INFO] Starting server at \033[1m%s\033[0m\n", "http://localhost:"+serverPort)
-			os.Server(
+			cli.Printf(cli.Notice, "[INFO] Starting server at \033[1m%s\033[0m\n", "http://localhost:"+serverPort)
+			server.Start(
 				options.Destination.Path,
 				serverPort,
 				func(uri string) error {
-					os.Printf(os.Notice, "[GET] %s\n", uri)
+					cli.Printf(cli.Notice, "[GET] %s\n", uri)
 					return nil
 				},
 			)
@@ -443,20 +445,20 @@ func main() {
 	if watch {
 
 		go func() {
-			os.Printf(os.Notice, "[INFO] Starting file watch process\n")
-			os.Watch(
+			cli.Printf(cli.Notice, "[INFO] Starting file watch process\n")
+			system.Watch(
 				options.Source.Path,
 				func(path string, action string) error {
 
-					err = compactor.IndexFiles(options, os.Dir(path))
+					err = processor.IndexFiles(options, system.Dir(path))
 					if err != nil {
-						os.Printf(os.Fatal, "[ERROR] %v\n", err)
-						_os.Exit(1)
+						cli.Printf(cli.Fatal, "[ERROR] %v\n", err)
+						os.Exit(1)
 						return err
 					}
 
-					packages = compactor.FindPackages(options)
-					file := compactor.FindPackage(options, path)
+					packages = processor.FindPackages(options)
+					file := processor.FindPackage(options, path)
 
 					if file.Extension == "" {
 						return nil
@@ -495,14 +497,14 @@ func main() {
 	}
 
 	// Compilation
-	os.Printf(os.Notice, "[INFO] Running compilation on each package\n")
+	cli.Printf(cli.Notice, "[INFO] Running compilation on each package\n")
 
 	for _, item := range packages {
 		process(options, item)
 	}
 
 	// Keep process alive
-	if watch || server {
+	if watch || serverMode {
 		<-exit
 	}
 
