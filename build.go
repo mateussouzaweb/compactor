@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/mateussouzaweb/compactor/src/cli"
 )
 
 func main() {
@@ -29,10 +30,10 @@ func main() {
 	// Run the command and check for errors
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Build error: %s\n", err.Error())
+		cli.Printf(cli.Fatal, "[ERROR] Build error: %s\n", err.Error())
 		exitCode = 1
 	} else {
-		fmt.Printf("Build completed successfully!\n")
+		cli.Printf(cli.Success, "[SUCCESS] Build completed successfully!\n")
 	}
 
 }
