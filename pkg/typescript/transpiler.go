@@ -2,10 +2,12 @@ package typescript
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
+	sysos "os"
 	"os/exec"
 	"time"
 
@@ -13,6 +15,10 @@ import (
 	"github.com/mateussouzaweb/compactor/os"
 )
 
+//go:embed *.js
+var transpilerFS embed.FS
+
+// TranspilerService struct
 type TranspilerService struct {
 	File    string
 	Port    string
@@ -23,77 +29,34 @@ type TranspilerService struct {
 // Init service to handle transpilation requests
 func (service *TranspilerService) Init() error {
 
+	var err error
+
+	// Write server script to temporary file
+	file := os.TemporaryFile("typescript-transpiler.js")
+	defer func() {
+		errors.Join(err, os.Delete(file))
+	}()
+
+	serverScript, err := transpilerFS.ReadFile("transpiler.js")
+	if err != nil {
+		return err
+	}
+
+	err = os.Write(file, string(serverScript), 0775)
+	if err != nil {
+		return err
+	}
+
+	// Get temporary port
 	port, err := os.TemporaryPort()
 	if err != nil {
 		return err
 	}
 
-	code := fmt.Sprintf(`
-	const { execSync } = require("child_process")
-	const root = execSync("npm root -g").toString().trim()
-	const ts = require(root + "/typescript")
-	const http = require("http")
-	const url = require("url")
-
-	const httpServer = http.createServer(async (request, response) => {
-
-		try {
-			
-			const buffers = []
-			for await (const chunk of request) {
-				buffers.push(chunk)
-			}
-
-			const data = Buffer.concat(buffers).toString()
-			const body = JSON.parse(data)
-
-			const config = body.config
-				config.fileName = body.relative
-
-			const source = body.source
-			const result = ts.transpileModule(source, config)
-
-			const output = result.outputText ? result.outputText : ""
-			const sourceMap = result.sourceMapText ? result.sourceMapText.replace(
-				'"sources":["' + body.filename + '"]',
-				'"sources":["' + body.relative + '"]'
-			) : ""
-
-			response.writeHead(200, { "Content-Type": "application/json" })
-			response.write(JSON.stringify({
-				output: output,
-				sourceMap: sourceMap
-			}))
-
-		} catch (error){
-			
-			response.writeHead(400, { "Content-Type": "application/json" })
-			response.write(JSON.stringify({
-				error: error.message
-			}))
-
-		}
-
-		response.end()
-	})
-
-	httpServer.listen(%s)`, port)
-
-	file := os.TemporaryFile("server.js")
-	err = os.Write(file, code, 0775)
-
-	defer func() {
-		if err != nil {
-			os.Delete(file)
-		}
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	// Run server
+	// Run server in background
 	cmd := exec.Command("node", file)
+	cmd.Env = append(sysos.Environ(), "PORT="+port)
+
 	err = cmd.Start()
 	if err != nil {
 		return err
@@ -103,9 +66,8 @@ func (service *TranspilerService) Init() error {
 		return cmd.Wait()
 	}()
 
-	address := "http://localhost:" + port
-
 	// Wait service become online
+	address := "http://localhost:" + port
 	for {
 		_, err := http.Get(address)
 		if err == nil {
@@ -168,7 +130,6 @@ func (service *TranspilerService) Execute(config *TSConfig, file *compactor.File
 		"application/json",
 		bytes.NewBuffer(body),
 	)
-
 	if err != nil {
 		return err
 	}
