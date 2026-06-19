@@ -63,7 +63,11 @@ func (service *TranspilerService) Init() error {
 	}
 
 	go func() error {
-		return cmd.Wait()
+		err := cmd.Wait()
+		if err != nil {
+			panic(err)
+		}
+		return nil
 	}()
 
 	// Wait service become online
