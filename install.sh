@@ -54,7 +54,7 @@ if ! /sbin/ldconfig -p | grep -q libjpeg; then
 fi
 
 # Install required npm packages globally
-PKGS=(gifsicle jpegoptim-bin cwebp-bin optipng-bin sass terser typescript svgo html-minifier rollup)
+PKGS=(gifsicle jpegoptim-bin cwebp-bin optipng-bin sass-embedded terser typescript svgo html-minifier rollup)
 INSTALLED=$(npm list -g)
 
 echo "[INFO] Checking NPM packages..."

@@ -22,7 +22,7 @@ RUN npm install -g --no-progress \
     jpegoptim-bin \
     cwebp-bin \
     optipng-bin \
-    sass \
+    sass-embedded \
     terser \
     typescript \
     svgo \
