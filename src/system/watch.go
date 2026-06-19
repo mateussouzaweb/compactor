@@ -61,7 +61,10 @@ func Watch(root string, onChange WatchCallback) error {
 				}
 
 				for _, file := range files {
-					WatchCheckFile(file, onChange)
+					err := WatchCheckFile(file, onChange)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

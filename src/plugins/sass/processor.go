@@ -13,13 +13,7 @@ var _service TranspilerService
 
 // Init processor
 func Init(options *processor.Options) error {
-
-	err := _service.Init()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return _service.Init()
 }
 
 // Shutdown processor

@@ -65,10 +65,13 @@ func TemporaryPort() (string, error) {
 		return "", err
 	}
 
-	defer listener.Close()
-
 	portNumber := listener.Addr().(*net.TCPAddr).Port
 	port := fmt.Sprintf("%d", portNumber)
+
+	err = listener.Close()
+	if err != nil {
+		return "", err
+	}
 
 	return port, nil
 }

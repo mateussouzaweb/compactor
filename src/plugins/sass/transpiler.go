@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"embed"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/mateussouzaweb/compactor/src/errors"
 	"github.com/mateussouzaweb/compactor/src/processor"
 	"github.com/mateussouzaweb/compactor/src/system"
 )
@@ -33,9 +33,9 @@ func (service *TranspilerService) Init() error {
 
 	// Write server script to temporary file
 	file := system.TemporaryFile("sass-transpiler.js")
-	defer func() {
-		errors.Join(err, system.Delete(file))
-	}()
+	defer errors.Join(&err, func() error {
+		return system.Delete(file)
+	})
 
 	serverScript, err := transpilerFS.ReadFile("transpiler.js")
 	if err != nil {
@@ -86,7 +86,7 @@ func (service *TranspilerService) Init() error {
 	service.Address = address
 	service.Cmd = cmd
 
-	return nil
+	return err
 }
 
 // Shutdown transpilation service
@@ -138,7 +138,9 @@ func (service *TranspilerService) Execute(config *SassConfig, file *processor.Fi
 		return err
 	}
 
-	defer response.Body.Close()
+	defer errors.Join(&err, func() error {
+		return response.Body.Close()
+	})
 
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -167,5 +169,5 @@ func (service *TranspilerService) Execute(config *SassConfig, file *processor.Fi
 		}
 	}
 
-	return nil
+	return err
 }
