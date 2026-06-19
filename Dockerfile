@@ -13,7 +13,7 @@ ENV CGO_ENABLED=0 GOOS=linux
 RUN go build -o /usr/local/bin/compactor ./cmd/compactor
 
 # Runtime stage
-FROM node:20-alpine AS runtime
+FROM node:lts-alpine AS runtime
 
 RUN apk add --no-cache libjpeg-turbo gcompat
 
