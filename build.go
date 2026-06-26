@@ -17,9 +17,9 @@ func main() {
 	// Will build binaries for both architectures
 	script := `mkdir -p bin/; \
 	export GOOS=linux; export GOARCH=amd64; \
-	go build -o bin/compactor-amd64 cmd/compactor/main.go; \
+	go build go -buildvcs=false -o bin/compactor-amd64 cmd/compactor; \
 	export GOOS=linux; export GOARCH=arm64; \
-	go build -o bin/compactor-arm64 cmd/compactor/main.go`
+	go build go -buildvcs=false -o bin/compactor-arm64 cmd/compactor`
 
 	cmd := exec.Command("bash", "-c", script)
 	cmd.Env = os.Environ()
