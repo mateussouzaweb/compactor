@@ -103,11 +103,11 @@ func main() {
 
 	// Print information
 	if context.Version {
-		cli.Printf("", "Compactor version 0.3.4\n")
+		cli.Printf("", "Compactor version 0.3.5\n")
 		return
 	}
 
-	cli.Printf(cli.Purple, ":::| COMPACTOR - 0.3.4 |:::\n")
+	cli.Printf(cli.Purple, ":::| COMPACTOR - 0.3.5 |:::\n")
 	cli.Printf(cli.Notice, "[INFO] Files source folder is %s\n", options.Source.Path)
 	cli.Printf(cli.Notice, "[INFO] Files destination folder is %s\n", options.Destination.Path)
 
