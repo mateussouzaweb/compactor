@@ -2,15 +2,13 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
 
-RUN apk add --no-cache git
-
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 ENV CGO_ENABLED=0 GOOS=linux
-RUN go build -o /usr/local/bin/compactor ./cmd/compactor
+RUN go build -buildvcs=false -o /usr/local/bin/compactor ./cmd/compactor
 
 # Runtime stage
 FROM node:lts-alpine AS runtime
