@@ -15,19 +15,19 @@ type Related struct {
 
 // File struct
 type File struct {
-	Path        string      // Full path (root + location)
-	Destination string      // Full destination path
-	Root        string      // Root location
-	Location    string      // Location from root
-	Folder      string      // Location folder
-	File        string      // File name with extension
-	Name        string      // File name
-	Extension   string      // File Extension
-	Content     string      // File content
-	Permission  fs.FileMode // File permissions
-	Exists      bool        // File exists flag
-	Checksum    []string    // Checksum history
-	Related     []Related   // Related items
+	Path        string      `json:"path"`        // Full path (root + location)
+	Destination string      `json:"destination"` // Full destination path
+	Root        string      `json:"root"`        // Root location
+	Location    string      `json:"location"`    // Location from root
+	Folder      string      `json:"folder"`      // Location folder
+	File        string      `json:"file"`        // File name with extension
+	Name        string      `json:"name"`        // File name
+	Extension   string      `json:"extension"`   // File Extension
+	Content     string      `json:"content"`     // File content
+	Permission  fs.FileMode `json:"permission"`  // File permissions
+	Exists      bool        `json:"exists"`      // File exists flag
+	Checksum    []string    `json:"-"`           // Checksum history
+	Related     []Related   `json:"-"`           // Related items
 }
 
 // FindRelated retrieve the related paths of the item recursively

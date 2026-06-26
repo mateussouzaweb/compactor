@@ -113,16 +113,15 @@ func (service *TranspilerService) Shutdown() error {
 // Execute transpilation process
 func (service *TranspilerService) Execute(config *TSConfig, file *processor.File) error {
 
+	relative := system.Relative(system.Dir(file.Destination), file.Path)
 	data := struct {
-		Config   *TSConfig `json:"config"`
-		Source   string    `json:"source"`
-		Filename string    `json:"filename"`
-		Relative string    `json:"relative"`
+		Config   *TSConfig       `json:"config"`
+		File     *processor.File `json:"file"`
+		Relative string          `json:"relative"`
 	}{
 		Config:   config,
-		Filename: file.File,
-		Relative: system.Relative(system.Dir(file.Destination), file.Path),
-		Source:   file.Content,
+		File:     file,
+		Relative: relative,
 	}
 
 	body, err := json.Marshal(data)

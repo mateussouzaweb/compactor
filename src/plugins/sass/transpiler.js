@@ -2,6 +2,7 @@ const { execSync } = require("child_process")
 const root = execSync("npm root -g").toString().trim()
 const sass = require(root + "/sass-embedded")
 const http = require("http")
+const path = require("path")
 const port = process.env.PORT || 3000
 
 const httpServer = http.createServer(async (request, response) => {
@@ -16,16 +17,18 @@ const httpServer = http.createServer(async (request, response) => {
         if (!data) {
             throw new Error("Empty request body")
         }
-        
-        const body = JSON.parse(data)
-        const config = body.config || {}
-        const source = body.source || ""
-        const result = await sass.compileStringAsync(source, config);
 
+        const body = JSON.parse(data)
+        const file = body.file || {}
+        const content = file.content || ""
+        const config = body.config || {}
+        config.loadPaths = [path.dirname(file.path)]
+
+        const result = await sass.compileStringAsync(content, config);
         const output = result.css ? result.css.toString() : ""
-        const sourceMap = result.sourceMap 
+        const sourceMap = result.sourceMap
             ? JSON.stringify(result.sourceMap).replace(
-                `"sources":["${body.filename}"]`,
+                `"sources":["${file.file}"]`,
                 `"sources":["${body.relative}"]`
             ) : ""
 
