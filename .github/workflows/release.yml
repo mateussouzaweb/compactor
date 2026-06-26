@@ -125,8 +125,12 @@ jobs:
       - build-binaries
     runs-on: ubuntu-latest
     steps:
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v6
+
       - id: publish-release
-        name: Publish Release
+        name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
