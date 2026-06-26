@@ -15,13 +15,14 @@ RUN go build -o /usr/local/bin/compactor ./cmd/compactor
 # Runtime stage
 FROM node:lts-alpine AS runtime
 
-RUN apk add --no-cache libjpeg-turbo gcompat
+RUN apk add --no-cache \
+    gifsicle \
+    optipng \
+    jpegoptim \
+    libjpeg-turbo \
+    libwebp-tools
 
 RUN npm install -g --no-progress \
-    gifsicle \
-    jpegoptim-bin \
-    cwebp-bin \
-    optipng-bin \
     sass-embedded \
     terser \
     typescript \
