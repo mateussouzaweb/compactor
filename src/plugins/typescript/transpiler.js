@@ -33,6 +33,7 @@ const httpServer = http.createServer(async (request, response) => {
 
         response.writeHead(200, { "Content-Type": "application/json" })
         response.end(JSON.stringify({
+            success: true,
             output: output,
             sourceMap: sourceMap
         }))
@@ -41,7 +42,8 @@ const httpServer = http.createServer(async (request, response) => {
         
         response.writeHead(400, { "Content-Type": "application/json" })
         response.end(JSON.stringify({
-            error: error.message
+            success: false,
+            message: error.message
         }))
 
     }

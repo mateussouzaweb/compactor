@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -148,6 +149,8 @@ func (service *TranspilerService) Execute(config *TSConfig, file *processor.File
 	}
 
 	result := struct {
+		Success   bool   `json:"success"`
+		Message   string `json:"message"`
 		Output    string `json:"output"`
 		SourceMap string `json:"sourceMap"`
 	}{}
@@ -155,6 +158,10 @@ func (service *TranspilerService) Execute(config *TSConfig, file *processor.File
 	err = json.Unmarshal(responseBody, &result)
 	if err != nil {
 		return err
+	}
+
+	if !result.Success {
+		return fmt.Errorf("transpiler error: %s", result.Message)
 	}
 
 	err = system.Write(file.Destination, result.Output, file.Permission)
