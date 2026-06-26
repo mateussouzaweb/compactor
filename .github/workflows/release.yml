@@ -10,7 +10,6 @@ permissions:
 
 env:
   CI: true
-  SAVE_ARTIFACT: false
 
 jobs:
   check-commit:
@@ -83,7 +82,9 @@ jobs:
 
   build-binaries:
     name: Build Binaries
-    needs: [extract-information, create-release]
+    needs: 
+      - extract-information
+      - create-release
     runs-on: ubuntu-latest
     steps:
       - id: checkout
@@ -115,6 +116,25 @@ jobs:
           set -- $FILES
           gh release upload "$TAG" "$@" --clobber
 
+  build-docker:
+    name: Build Docker Image
+    needs: extract-information
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.extract-information.outputs.version }}
+      tag: ${{ needs.extract-information.outputs.tag }}
+      latest: true
+
+  publish-release:
+    name: Publish Release
+    needs:
+      - extract-information 
+      - create-release 
+      - build-binaries 
+      - build-docker
+    runs-on: ubuntu-latest
+    steps:
       - id: publish-release
         name: Publish Release
         env:

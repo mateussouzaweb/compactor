@@ -31,6 +31,6 @@ RUN npm install -g --no-progress \
 
 COPY --from=builder /usr/local/bin/compactor /usr/local/bin/
 
-WORKDIR /data
+WORKDIR /app
 ENTRYPOINT ["compactor"]
 CMD ["--help"]
