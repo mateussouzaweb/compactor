@@ -15,7 +15,7 @@ func main() {
 
 	// Create the build script
 	// Will build binaries for both architectures
-	script := `mkdir -p bin/; \
+	script := `mkdir -p ./bin/; \
 	export GOOS=linux; export GOARCH=amd64; \
 	go build -buildvcs=false -o ./bin/compactor-amd64 ./cmd/compactor; \
 	export GOOS=linux; export GOARCH=arm64; \
